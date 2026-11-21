@@ -51,12 +51,15 @@
   </style>
 </head>
 <body class="min-h-screen flex flex-col">
+
   
-  <script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => navigator.serviceWorker.register('service-worker.js'));
+  <style>
+  @media (max-width: 768px) {
+    header { position: static !important; }
+    .nav-scroll { flex-wrap: wrap !important; overflow-x: visible !important; }
+    .nav-tab { flex: 1 1 45% !important; justify-content: center !important; padding: 12px 8px !important; }
   }
-</script>
+</style>
 <div class="bg-amber-500 text-slate-950 text-center text-xs font-extrabold py-1.5 no-print">
   نسخة تجريبية (Beta) — ساعدنا نتحسن:
   <a href="https://forms.gle/PUT_YOUR_FORM_ID" target="_blank" class="underline">ابعتلنا ملاحظاتك</a>
@@ -1308,4 +1311,2082 @@
 
       <!-- Design Inputs, Layer Thickness Results & Chart -->
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <div class="lg:col-span-6 
+        <div class="lg:col-span-6 bg-white rounded-2xl p-5 shadow-sm border border-slate-200 space-y-4 text-xs">
+          <h3 class="text-sm font-extrabold text-slate-800">Traffic, Reliability &amp; Layer Moduli Inputs</h3>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div>
+              <label class="block font-bold text-slate-600 mb-1">Design ESALs (W18)</label>
+              <input id="desW18" type="number" step="500000" value="5000000" oninput="calculatePavementDesign()" class="w-full px-2.5 py-1.5 rounded-xl border border-slate-300 font-bold eng-term" />
+            </div>
+            <div>
+              <label class="block font-bold text-slate-600 mb-1">Reliability R (%)</label>
+              <select id="desReliability" onchange="calculatePavementDesign()" class="w-full px-2.5 py-1.5 rounded-xl border border-slate-300 font-bold eng-term bg-white">
+                <option value="85">85% (Zr=-1.037)</option>
+                <option value="90">90% (Zr=-1.282)</option>
+                <option value="95" selected>95% (Zr=-1.645)</option>
+                <option value="99">99% (Zr=-2.327)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block font-bold text-slate-600 mb-1">Std. Dev (So)</label>
+              <input id="desSo" type="number" step="0.01" value="0.45" oninput="calculatePavementDesign()" class="w-full px-2.5 py-1.5 rounded-xl border border-slate-300 font-bold eng-term" />
+            </div>
+            <div>
+              <label class="block font-bold text-slate-600 mb-1">&Delta;PSI (p0 &minus; pt)</label>
+              <input id="desDeltaPsi" type="number" step="0.1" value="1.7" oninput="calculatePavementDesign()" class="w-full px-2.5 py-1.5 rounded-xl border border-slate-300 font-bold eng-term" />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1">
+            <div>
+              <label class="block font-bold text-slate-600 mb-1">Asphalt E_AC (MPa)</label>
+              <input id="desEac" type="number" step="100" value="3100" oninput="calculatePavementDesign()" class="w-full px-2.5 py-1.5 rounded-xl border border-slate-300 font-bold eng-term" />
+            </div>
+            <div>
+              <label class="block font-bold text-slate-600 mb-1">Base Mr (MPa)</label>
+              <input id="desEbase" type="number" step="10" value="246" oninput="calculatePavementDesign()" class="w-full px-2.5 py-1.5 rounded-xl border border-slate-300 font-bold eng-term" />
+            </div>
+            <div>
+              <label class="block font-bold text-slate-600 mb-1">Subbase Mr (MPa)</label>
+              <input id="desEsubbase" type="number" step="5" value="125" oninput="calculatePavementDesign()" class="w-full px-2.5 py-1.5 rounded-xl border border-slate-300 font-bold eng-term" />
+            </div>
+            <div>
+              <label class="block font-bold text-slate-600 mb-1">Subgrade Mr (MPa)</label>
+              <input id="desMrSubgrade" type="number" step="5" value="75" oninput="calculatePavementDesign()" class="w-full px-2.5 py-1.5 rounded-xl border border-slate-300 font-bold eng-term" />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3 pt-1">
+            <div>
+              <label class="block font-bold text-slate-600 mb-1">Base Drainage Coeff (m2)</label>
+              <input id="desM2" type="number" step="0.05" value="1.00" oninput="calculatePavementDesign()" class="w-full px-2.5 py-1.5 rounded-xl border border-slate-300 font-bold eng-term" />
+            </div>
+            <div>
+              <label class="block font-bold text-slate-600 mb-1">Subbase Drainage Coeff (m3)</label>
+              <input id="desM3" type="number" step="0.05" value="1.00" oninput="calculatePavementDesign()" class="w-full px-2.5 py-1.5 rounded-xl border border-slate-300 font-bold eng-term" />
+            </div>
+          </div>
+
+          <!-- Output Thickness Table -->
+          <div class="overflow-x-auto pt-1">
+            <table class="w-full text-xs border-collapse">
+              <thead>
+                <tr class="bg-slate-900 text-white">
+                  <th class="p-2 text-left">Pavement Layer</th>
+                  <th class="p-2 text-center">Coeff (a_i)</th>
+                  <th class="p-2 text-center">Min Thickness</th>
+                  <th class="p-2 text-center">Design (cm)</th>
+                  <th class="p-2 text-center">Design (in)</th>
+                </tr>
+              </thead>
+              <tbody id="designLayersBody" class="divide-y divide-slate-200 font-bold"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="lg:col-span-6 space-y-5">
+          <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 space-y-3">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <h3 class="text-sm font-extrabold text-slate-800">Required vs. Provided Structural Number (SN)</h3>
+              <div class="flex items-center gap-2 eng-term text-xs font-extrabold">
+                <span class="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-800">Req SN: <span id="desReqSnOut">4.12</span></span>
+                <span class="px-2.5 py-1 rounded-lg bg-amber-100 text-amber-900">Prov SN*: <span id="desProvSnOut">4.34</span></span>
+                <span id="designStatusBadge" class="px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">ADEQUATE</span>
+              </div>
+            </div>
+            <div class="relative h-60 w-full">
+              <canvas id="designChart"></canvas>
+            </div>
+          </div>
+
+          <div class="bg-slate-900 text-white rounded-2xl p-5 shadow-sm">
+            <h4 class="text-xs font-extrabold uppercase tracking-wider text-amber-400 mb-2">AASHTO 1993 Iterative SN Solution &amp; Layer Breakdown</h4>
+            <div id="designMathSteps" class="text-xs text-slate-300 bg-slate-800/80 p-3.5 rounded-xl font-mono leading-relaxed whitespace-pre-line"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 9: SPECIFICATION TABLES ==================== -->
+    <section id="tab-specs" class="tab-panel space-y-6">
+      <!-- Table 1: Master Acceptance Criteria Comparison -->
+      <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200">
+        <div class="mb-4">
+          <span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-100 text-amber-800 eng-term">AASHTO M 147 / M 145 / 1993 GUIDE</span>
+          <h2 class="text-base sm:text-lg font-black text-slate-900 mt-1">Master Engineering Specification Limits (Base, Subbase &amp; Subgrade)</h2>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-xs border-collapse">
+            <thead>
+              <tr class="bg-slate-900 text-white">
+                <th class="p-3 text-left">Engineering Property / Test</th>
+                <th class="p-3 text-center eng-term">Standard Method</th>
+                <th class="p-3 text-center bg-amber-600/30 text-amber-200">Base Course</th>
+                <th class="p-3 text-center bg-sky-600/30 text-sky-200">Subbase Course</th>
+                <th class="p-3 text-center bg-emerald-600/30 text-emerald-200">Subgrade Layer</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-200 font-semibold">
+              <tr>
+                <td class="p-2.5 font-bold text-slate-800">Soaked CBR (at Target MDD)</td>
+                <td class="p-2.5 text-center eng-term text-slate-500">ASTM D1883 / T193</td>
+                <td class="p-2.5 text-center eng-term font-bold text-slate-900">&ge; 80% (@ 98% MDD)</td>
+                <td class="p-2.5 text-center eng-term font-bold text-slate-900">&ge; 30% (@ 95% MDD)</td>
+                <td class="p-2.5 text-center eng-term font-bold text-slate-900">&ge; 8% (@ 95% MDD)</td>
+              </tr>
+              <tr class="bg-slate-50">
+                <td class="p-2.5 font-bold text-slate-800">Field Compaction Requirement</td>
+                <td class="p-2.5 text-center eng-term text-slate-500">ASTM D1557 / T180</td>
+                <td class="p-2.5 text-center eng-term">&ge; 98% MDD</td>
+                <td class="p-2.5 text-center eng-term">&ge; 95% MDD</td>
+                <td class="p-2.5 text-center eng-term">&ge; 95% MDD</td>
+              </tr>
+              <tr>
+                <td class="p-2.5 font-bold text-slate-800">L.A. Abrasion Maximum Loss</td>
+                <td class="p-2.5 text-center eng-term text-slate-500">ASTM C131 / T96</td>
+                <td class="p-2.5 text-center eng-term">&le; 40%</td>
+                <td class="p-2.5 text-center eng-term">&le; 50%</td>
+                <td class="p-2.5 text-center eng-term text-slate-500">Optional / N/A</td>
+              </tr>
+              <tr class="bg-slate-50">
+                <td class="p-2.5 font-bold text-slate-800">Liquid Limit (LL) Maximum</td>
+                <td class="p-2.5 text-center eng-term text-slate-500">ASTM D4318 / T89</td>
+                <td class="p-2.5 text-center eng-term">&le; 25%</td>
+                <td class="p-2.5 text-center eng-term">&le; 35%</td>
+                <td class="p-2.5 text-center eng-term">&le; 40%</td>
+              </tr>
+              <tr>
+                <td class="p-2.5 font-bold text-slate-800">Plasticity Index (PI) Maximum</td>
+                <td class="p-2.5 text-center eng-term text-slate-500">ASTM D4318 / T90</td>
+                <td class="p-2.5 text-center eng-term">&le; 6%</td>
+                <td class="p-2.5 text-center eng-term">&le; 10%</td>
+                <td class="p-2.5 text-center eng-term">&le; 15%</td>
+              </tr>
+              <tr class="bg-slate-50">
+                <td class="p-2.5 font-bold text-slate-800">Fines Passing No. 200 (0.075 mm)</td>
+                <td class="p-2.5 text-center eng-term text-slate-500">ASTM C136 / T27</td>
+                <td class="p-2.5 text-center eng-term">&le; 10% (or &le; 2/3 Pass #40)</td>
+                <td class="p-2.5 text-center eng-term">&le; 15%</td>
+                <td class="p-2.5 text-center eng-term">&le; 35% (Preferred)</td>
+              </tr>
+              <tr>
+                <td class="p-2.5 font-bold text-slate-800">Minimum Resilient Modulus (M<sub>r</sub>)</td>
+                <td class="p-2.5 text-center eng-term text-slate-500">AASHTO T 307 / 1993</td>
+                <td class="p-2.5 text-center eng-term">&ge; 200 MPa (29,000 psi)</td>
+                <td class="p-2.5 text-center eng-term">&ge; 100 MPa (14,500 psi)</td>
+                <td class="p-2.5 text-center eng-term">&ge; 50 MPa (7,250 psi)</td>
+              </tr>
+              <tr class="bg-slate-50">
+                <td class="p-2.5 font-bold text-slate-800">Recommended AASHTO Soil Group</td>
+                <td class="p-2.5 text-center eng-term text-slate-500">AASHTO M 145</td>
+                <td class="p-2.5 text-center eng-term">A-1-a (GI = 0)</td>
+                <td class="p-2.5 text-center eng-term">A-1-a, A-1-b, A-2-4</td>
+                <td class="p-2.5 text-center eng-term">A-1 to A-2-6 (GI &le; 4)</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Table 2: AASHTO M 147 Gradation Envelopes -->
+      <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200">
+        <h3 class="text-sm font-extrabold text-slate-900 mb-3">AASHTO M 147 Standard Gradation Envelopes (% Passing by Weight)</h3>
+        <div class="overflow-x-auto">
+          <table class="w-full text-xs border-collapse text-center eng-term">
+            <thead>
+              <tr class="bg-slate-900 text-white">
+                <th class="p-2.5 text-left">Sieve Designation</th>
+                <th class="p-2.5">Opening (mm)</th>
+                <th class="p-2.5">Grading A</th>
+                <th class="p-2.5">Grading B (Base)</th>
+                <th class="p-2.5">Grading C (Subbase)</th>
+                <th class="p-2.5">Grading D</th>
+                <th class="p-2.5">Grading E</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-200 font-semibold">
+              <tr><td class="p-2 text-left font-bold">2 in</td><td>50.0</td><td>100</td><td>100</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td></tr>
+              <tr class="bg-slate-50"><td class="p-2 text-left font-bold">1 in</td><td>25.0</td><td>&mdash;</td><td>75 &ndash; 95</td><td>100</td><td>100</td><td>100</td></tr>
+              <tr><td class="p-2 text-left font-bold">3/8 in</td><td>9.5</td><td>30 &ndash; 65</td><td>40 &ndash; 75</td><td>50 &ndash; 85</td><td>60 &ndash; 100</td><td>&mdash;</td></tr>
+              <tr class="bg-slate-50"><td class="p-2 text-left font-bold">No. 4</td><td>4.75</td><td>25 &ndash; 55</td><td>30 &ndash; 60</td><td>35 &ndash; 65</td><td>50 &ndash; 85</td><td>55 &ndash; 100</td></tr>
+              <tr><td class="p-2 text-left font-bold">No. 10</td><td>2.00</td><td>15 &ndash; 40</td><td>20 &ndash; 45</td><td>25 &ndash; 50</td><td>40 &ndash; 70</td><td>40 &ndash; 100</td></tr>
+              <tr class="bg-slate-50"><td class="p-2 text-left font-bold">No. 40</td><td>0.425</td><td>8 &ndash; 20</td><td>15 &ndash; 30</td><td>15 &ndash; 30</td><td>25 &ndash; 45</td><td>20 &ndash; 50</td></tr>
+              <tr><td class="p-2 text-left font-bold">No. 200</td><td>0.075</td><td>2 &ndash; 8</td><td>5 &ndash; 15 (Base &le;10)</td><td>5 &ndash; 15</td><td>5 &ndash; 20</td><td>6 &ndash; 20</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Table 3: AASHTO M 145 Soil Classification Table -->
+      <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200">
+        <h3 class="text-sm font-extrabold text-slate-900 mb-3">AASHTO M 145 Soil Classification Criteria</h3>
+        <div class="overflow-x-auto">
+          <table class="w-full text-xs border-collapse text-center eng-term">
+            <thead>
+              <tr class="bg-slate-900 text-white">
+                <th class="p-2 text-left">General Classification</th>
+                <th colspan="7" class="p-2 bg-amber-600/30 text-amber-200">Granular Materials (&le; 35% Passing No. 200)</th>
+                <th colspan="4" class="p-2 bg-sky-600/30 text-sky-200">Silt-Clay Materials (&gt; 35% Passing No. 200)</th>
+              </tr>
+              <tr class="bg-slate-800 text-slate-200">
+                <th class="p-2 text-left">Group Classification</th>
+                <th class="p-2">A-1-a</th>
+                <th class="p-2">A-1-b</th>
+                <th class="p-2">A-3</th>
+                <th class="p-2">A-2-4</th>
+                <th class="p-2">A-2-5</th>
+                <th class="p-2">A-2-6</th>
+                <th class="p-2">A-2-7</th>
+                <th class="p-2">A-4</th>
+                <th class="p-2">A-5</th>
+                <th class="p-2">A-6</th>
+                <th class="p-2">A-7-5 / A-7-6</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-200 font-semibold">
+              <tr><td class="p-2 text-left font-bold">Pass No. 10 (2.00 mm)</td><td>&le; 50</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td></tr>
+              <tr class="bg-slate-50"><td class="p-2 text-left font-bold">Pass No. 40 (0.425 mm)</td><td>&le; 30</td><td>&le; 50</td><td>&ge; 51</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td></tr>
+              <tr><td class="p-2 text-left font-bold">Pass No. 200 (0.075 mm)</td><td>&le; 15</td><td>&le; 25</td><td>&le; 10</td><td>&le; 35</td><td>&le; 35</td><td>&le; 35</td><td>&le; 35</td><td>&ge; 36</td><td>&ge; 36</td><td>&ge; 36</td><td>&ge; 36</td></tr>
+              <tr class="bg-slate-50"><td class="p-2 text-left font-bold">Liquid Limit (LL)</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&le; 40</td><td>&ge; 41</td><td>&le; 40</td><td>&ge; 41</td><td>&le; 40</td><td>&ge; 41</td><td>&le; 40</td><td>&ge; 41</td></tr>
+              <tr><td class="p-2 text-left font-bold">Plasticity Index (PI)</td><td>&le; 6</td><td>&le; 6</td><td>NP</td><td>&le; 10</td><td>&le; 10</td><td>&ge; 11</td><td>&ge; 11</td><td>&le; 10</td><td>&le; 10</td><td>&ge; 11</td><td>&ge; 11</td></tr>
+              <tr class="bg-slate-50"><td class="p-2 text-left font-bold">Max Group Index (GI)</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>&le; 4</td><td>&le; 4</td><td>&le; 8</td><td>&le; 12</td><td>&le; 16</td><td>&le; 20</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-slate-950 text-slate-400 border-t border-slate-800 py-4 px-4 text-xs no-print">
+    <div class="max-w-[1440px] mx-auto flex flex-wrap items-center justify-between gap-2">
+      <div>
+        <strong class="text-white">Smart Road Lab</strong> &mdash; AASHTO &amp; ASTM Pavement Materials &amp; Design Suite
+      </div>
+      <div>
+        Engineered by <strong class="text-amber-400">Eng./ Samar A.Taha</strong> &bull; B.Sc. Civil Eng. (2010) &amp; M.Sc. Civil Eng. (2019), Faculty of Engineering, Mansoura University
+      </div>
+    </div>
+  </footer>
+
+  <!-- ==================== JAVASCRIPT ENGINEERING ENGINE ==================== -->
+  <script>
+    // Global State & Layer Specifications
+    let targetLayer = 'base';
+    const charts = {};
+
+    const LAYER_SPECS = {
+      base: {
+        nameEn: 'Base Course (AASHTO M 147 Grading B)',
+        minCBR: 80,
+        compactionPct: 98,
+        maxLA: 40,
+        laRequired: true,
+        maxLL: 25,
+        maxPI: 6,
+        maxFines: 10,
+        minMr: 200
+      },
+      subbase: {
+        nameEn: 'Subbase Course (AASHTO M 147 Grading C)',
+        minCBR: 30,
+        compactionPct: 95,
+        maxLA: 50,
+        laRequired: true,
+        maxLL: 35,
+        maxPI: 10,
+        maxFines: 15,
+        minMr: 100
+      },
+      subgrade: {
+        nameEn: 'Compacted Subgrade Layer (AASHTO M 145)',
+        minCBR: 8,
+        compactionPct: 95,
+        maxLA: 55,
+        laRequired: false,
+        maxLL: 40,
+        maxPI: 15,
+        maxFines: 35,
+        minMr: 50
+      }
+    };
+
+    const SIEVE_DATA = [
+      { name: '2"', size: 50.0, ret: 0, baseMin: 100, baseMax: 100, subMin: 100, subMax: 100, sgMin: 100, sgMax: 100 },
+      { name: '1"', size: 25.0, ret: 450, baseMin: 75, baseMax: 95, subMin: 100, subMax: 100, sgMin: 85, sgMax: 100 },
+      { name: '3/4"', size: 19.0, ret: 620, baseMin: 60, baseMax: 85, subMin: 80, subMax: 100, sgMin: 75, sgMax: 100 },
+      { name: '3/8"', size: 9.5, ret: 980, baseMin: 40, baseMax: 75, subMin: 50, subMax: 85, sgMin: 60, sgMax: 100 },
+      { name: 'No. 4', size: 4.75, ret: 850, baseMin: 30, baseMax: 60, subMin: 35, subMax: 65, sgMin: 45, sgMax: 100 },
+      { name: 'No. 10', size: 2.00, ret: 760, baseMin: 20, baseMax: 45, subMin: 25, subMax: 50, sgMin: 30, sgMax: 95 },
+      { name: 'No. 40', size: 0.425, ret: 690, baseMin: 15, baseMax: 30, subMin: 15, subMax: 30, sgMin: 15, sgMax: 70 },
+      { name: 'No. 200', size: 0.075, ret: 390, baseMin: 0, baseMax: 10, subMin: 5, subMax: 15, sgMin: 0, sgMax: 35 }
+    ];
+
+    const PROCTOR_TRIALS = [
+      { w: 4.0, wetMass: 4725 },
+      { w: 5.1, wetMass: 4920 },
+      { w: 6.2, wetMass: 5065 },
+      { w: 7.4, wetMass: 5025 },
+      { w: 8.6, wetMass: 4930 }
+    ];
+
+    const CBR_PENETRATIONS = [0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 7.5, 10.0, 12.5];
+    const CBR_LOADS = {
+      b10: [1.1, 2.2, 3.3, 4.3, 5.2, 6.0, 7.3, 8.4, 10.6, 12.1, 13.4],
+      b30: [1.9, 3.8, 5.6, 7.3, 8.8, 10.1, 12.3, 14.1, 17.6, 20.1, 22.0],
+      b65: [2.7, 5.4, 7.9, 10.2, 12.2, 14.0, 17.0, 19.5, 24.3, 27.6, 30.2]
+    };
+
+    const MR_SEQUENCES = [
+      { s3: 20.7, sd: 20.7, er: 465 },
+      { s3: 20.7, sd: 41.4, er: 870 },
+      { s3: 34.5, sd: 34.5, er: 610 },
+      { s3: 34.5, sd: 68.9, er: 1135 },
+      { s3: 68.9, sd: 68.9, er: 895 },
+      { s3: 68.9, sd: 137.9, er: 1680 },
+      { s3: 103.4, sd: 103.4, er: 1120 },
+      { s3: 103.4, sd: 206.8, er: 2110 }
+    ];
+
+    const labState = {
+      sievePassMap: {},
+      cu: 30.8,
+      cc: 1.93,
+      d10: 0.24,
+      d30: 1.85,
+      d60: 7.40,
+      sievePassFlag: true,
+      laPercent: 22.4,
+      laPassFlag: true,
+      mdd: 2.245,
+      omc: 6.2,
+      designCBR: 88.5,
+      cbrPassFlag: true,
+      ll: 19.5,
+      pl: 16.0,
+      pi: 3.5,
+      isNP: false,
+      attPassFlag: true,
+      aashtoGroup: 'A-1-a (0)',
+      uscsSymbol: 'GW',
+      triaxialMrMpa: 246,
+      triaxialMrPsi: 35679,
+      empiricalMrMpa: 310,
+      layerCoeffLabel: 'a2 = 0.157',
+      mrPassFlag: true,
+      designReqSN: 4.12,
+      designProvSN: 4.34,
+      designD1Cm: 12.5,
+      designD2Cm: 20.0,
+      designD3Cm: 20.0,
+      designTotalCm: 52.5,
+      designAdequate: true
+    };
+
+    function showToast(msg) {
+      const box = document.getElementById('toastBox');
+      const txt = document.getElementById('toastMsg');
+      if (!box || !txt) return;
+      txt.textContent = msg;
+      box.classList.remove('hidden');
+      clearTimeout(window._toastTimer);
+      window._toastTimer = setTimeout(() => box.classList.add('hidden'), 3200);
+    }
+
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-panel').forEach(el => el.classList.remove('active'));
+      const panel = document.getElementById('tab-' + tabId);
+      if (panel) panel.classList.add('active');
+
+      document.querySelectorAll('.nav-tab').forEach(btn => {
+        btn.className = 'nav-tab px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap flex items-center gap-2 text-slate-300 hover:bg-slate-800 hover:text-white';
+      });
+      const activeBtn = document.getElementById('nav-' + tabId);
+      if (activeBtn) {
+        activeBtn.className = 'nav-tab px-3.5 py-2 rounded-xl text-xs font-extrabold whitespace-nowrap flex items-center gap-2 bg-amber-500 text-slate-950 shadow-sm';
+      }
+    }
+
+    function setTargetLayer(layer) {
+      targetLayer = layer;
+      ['base', 'subbase', 'subgrade'].forEach(l => {
+        const btn = document.getElementById('layerBtn-' + l);
+        if (btn) {
+          btn.className = l === layer
+            ? 'px-3 py-1.5 rounded-lg text-xs font-extrabold transition bg-amber-500 text-slate-950'
+            : 'px-3 py-1.5 rounded-lg text-xs font-extrabold transition text-slate-300 hover:text-white';
+        }
+      });
+      const sel = document.getElementById('cbrTargetComp');
+      if (sel) sel.value = String(LAYER_SPECS[layer].compactionPct);
+      recalculateAll();
+      showToast('Target layer set to ' + LAYER_SPECS[layer].nameEn);
+    }
+
+    function loadSamplePreset(preset) {
+      if (preset === 'base') {
+        targetLayer = 'base';
+        document.getElementById('metaSampleId').value = 'SRL-2026-BC-01';
+        document.getElementById('metaSource').value = 'Crushed Dolomitic Limestone Quarry';
+        document.getElementById('sieveTotalWeight').value = 5000;
+        const rets = [0, 450, 620, 980, 850, 760, 690, 390];
+        SIEVE_DATA.forEach((s, i) => s.ret = rets[i]);
+        document.getElementById('laW1').value = 5000;
+        document.getElementById('laW2').value = 3880;
+        const pTrials = [{ w: 4.0, wetMass: 4725 }, { w: 5.1, wetMass: 4920 }, { w: 6.2, wetMass: 5065 }, { w: 7.4, wetMass: 5025 }, { w: 8.6, wetMass: 4930 }];
+        pTrials.forEach((t, i) => { PROCTOR_TRIALS[i].w = t.w; PROCTOR_TRIALS[i].wetMass = t.wetMass; });
+        document.getElementById('cbrGd10').value = 2.045;
+        document.getElementById('cbrGd30').value = 2.155;
+        document.getElementById('cbrGd65').value = 2.240;
+        CBR_LOADS.b10 = [1.1, 2.2, 3.3, 4.3, 5.2, 6.0, 7.3, 8.4, 10.6, 12.1, 13.4];
+        CBR_LOADS.b30 = [1.9, 3.8, 5.6, 7.3, 8.8, 10.1, 12.3, 14.1, 17.6, 20.1, 22.0];
+        CBR_LOADS.b65 = [2.7, 5.4, 7.9, 10.2, 12.2, 14.0, 17.0, 19.5, 24.3, 27.6, 30.2];
+        document.getElementById('attNonPlastic').checked = false;
+        document.getElementById('llN1').value = 34; document.getElementById('llW1').value = 18.6;
+        document.getElementById('llN2').value = 25; document.getElementById('llW2').value = 19.5;
+        document.getElementById('llN3').value = 17; document.getElementById('llW3').value = 20.6;
+        document.getElementById('plW1').value = 15.8; document.getElementById('plW2').value = 16.2;
+        document.getElementById('mrRefTheta').value = 208;
+        const baseSeq = [
+          { s3: 20.7, sd: 20.7, er: 465 }, { s3: 20.7, sd: 41.4, er: 870 },
+          { s3: 34.5, sd: 34.5, er: 610 }, { s3: 34.5, sd: 68.9, er: 1135 },
+          { s3: 68.9, sd: 68.9, er: 895 }, { s3: 68.9, sd: 137.9, er: 1680 },
+          { s3: 103.4, sd: 103.4, er: 1120 }, { s3: 103.4, sd: 206.8, er: 2110 }
+        ];
+        baseSeq.forEach((q, i) => Object.assign(MR_SEQUENCES[i], q));
+      } else if (preset === 'subbase') {
+        targetLayer = 'subbase';
+        document.getElementById('metaSampleId').value = 'SRL-2026-SB-02';
+        document.getElementById('metaSource').value = 'Natural Pit-Run Gravelly Sand Borrow';
+        document.getElementById('sieveTotalWeight').value = 5000;
+        const rets = [0, 0, 280, 920, 950, 820, 880, 620];
+        SIEVE_DATA.forEach((s, i) => s.ret = rets[i]);
+        document.getElementById('laW1').value = 5000;
+        document.getElementById('laW2').value = 3250;
+        const pTrials = [{ w: 5.5, wetMass: 4520 }, { w: 6.8, wetMass: 4710 }, { w: 8.1, wetMass: 4845 }, { w: 9.4, wetMass: 4795 }, { w: 10.7, wetMass: 4690 }];
+        pTrials.forEach((t, i) => { PROCTOR_TRIALS[i].w = t.w; PROCTOR_TRIALS[i].wetMass = t.wetMass; });
+        document.getElementById('cbrGd10').value = 1.930;
+        document.getElementById('cbrGd30').value = 2.025;
+        document.getElementById('cbrGd65').value = 2.105;
+        CBR_LOADS.b10 = [0.6, 1.2, 1.8, 2.3, 2.8, 3.2, 3.9, 4.5, 5.6, 6.4, 7.1];
+        CBR_LOADS.b30 = [1.1, 2.2, 3.2, 4.1, 4.9, 5.6, 6.8, 7.8, 9.6, 11.0, 12.2];
+        CBR_LOADS.b65 = [1.6, 3.2, 4.7, 6.0, 7.2, 8.2, 9.9, 11.4, 14.0, 16.0, 17.8];
+        document.getElementById('attNonPlastic').checked = false;
+        document.getElementById('llN1').value = 35; document.getElementById('llW1').value = 24.8;
+        document.getElementById('llN2').value = 25; document.getElementById('llW2').value = 26.2;
+        document.getElementById('llN3').value = 16; document.getElementById('llW3').value = 27.8;
+        document.getElementById('plW1').value = 19.2; document.getElementById('plW2').value = 19.6;
+        document.getElementById('mrRefTheta').value = 150;
+        const sbSeq = [
+          { s3: 20.7, sd: 20.7, er: 760 }, { s3: 20.7, sd: 41.4, er: 1410 },
+          { s3: 34.5, sd: 34.5, er: 1020 }, { s3: 34.5, sd: 68.9, er: 1890 },
+          { s3: 68.9, sd: 68.9, er: 1480 }, { s3: 68.9, sd: 137.9, er: 2740 },
+          { s3: 103.4, sd: 103.4, er: 1850 }, { s3: 103.4, sd: 206.8, er: 3420 }
+        ];
+        sbSeq.forEach((q, i) => Object.assign(MR_SEQUENCES[i], q));
+      } else {
+        targetLayer = 'subgrade';
+        document.getElementById('metaSampleId').value = 'SRL-2026-SG-03';
+        document.getElementById('metaSource').value = 'In-Situ Silty Sand Subgrade Formation';
+        document.getElementById('sieveTotalWeight').value = 2000;
+        const rets = [0, 0, 0, 80, 160, 320, 860, 420];
+        SIEVE_DATA.forEach((s, i) => s.ret = rets[i]);
+        document.getElementById('laW1').value = 5000;
+        document.getElementById('laW2').value = 2850;
+        const pTrials = [{ w: 8.5, wetMass: 4120 }, { w: 10.2, wetMass: 4315 }, { w: 11.8, wetMass: 4440 }, { w: 13.5, wetMass: 4385 }, { w: 15.2, wetMass: 4270 }];
+        pTrials.forEach((t, i) => { PROCTOR_TRIALS[i].w = t.w; PROCTOR_TRIALS[i].wetMass = t.wetMass; });
+        document.getElementById('cbrGd10').value = 1.710;
+        document.getElementById('cbrGd30').value = 1.805;
+        document.getElementById('cbrGd65').value = 1.870;
+        CBR_LOADS.b10 = [0.22, 0.44, 0.65, 0.85, 1.02, 1.18, 1.44, 1.66, 2.05, 2.35, 2.60];
+        CBR_LOADS.b30 = [0.36, 0.72, 1.06, 1.38, 1.66, 1.92, 2.34, 2.70, 3.32, 3.80, 4.20];
+        CBR_LOADS.b65 = [0.52, 1.04, 1.54, 2.00, 2.40, 2.76, 3.35, 3.85, 4.72, 5.40, 5.95];
+        document.getElementById('attNonPlastic').checked = false;
+        document.getElementById('llN1').value = 34; document.getElementById('llW1').value = 31.2;
+        document.getElementById('llN2').value = 25; document.getElementById('llW2').value = 32.8;
+        document.getElementById('llN3').value = 16; document.getElementById('llW3').value = 34.6;
+        document.getElementById('plW1').value = 21.8; document.getElementById('plW2').value = 22.2;
+        document.getElementById('mrRefTheta').value = 85;
+        const sgSeq = [
+          { s3: 41.4, sd: 13.8, er: 175 }, { s3: 41.4, sd: 27.6, er: 365 },
+          { s3: 41.4, sd: 41.4, er: 575 }, { s3: 27.6, sd: 13.8, er: 195 },
+          { s3: 27.6, sd: 27.6, er: 410 }, { s3: 27.6, sd: 41.4, er: 645 },
+          { s3: 13.8, sd: 27.6, er: 455 }, { s3: 13.8, sd: 41.4, er: 720 }
+        ];
+        sgSeq.forEach((q, i) => Object.assign(MR_SEQUENCES[i], q));
+      }
+
+      setTargetLayer(targetLayer);
+      buildSieveTable();
+      buildProctorTable();
+      buildCbrTable();
+      buildMrTable();
+      recalculateAll();
+      showToast('Loaded standard ' + preset.toUpperCase() + ' preset sample');
+    }
+
+    // ==================== 1. SIEVE ANALYSIS ====================
+    function buildSieveTable() {
+      const tbody = document.getElementById('sieveTableBody');
+      if (!tbody) return;
+      tbody.innerHTML = SIEVE_DATA.map((s, idx) => `
+        <tr class="hover:bg-slate-50">
+          <td class="p-2 font-bold text-slate-800 eng-term">${s.name}</td>
+          <td class="p-2 text-center eng-term text-slate-500">${s.size}</td>
+          <td class="p-2 text-center">
+            <input type="number" min="0" step="1" value="${s.ret}" oninput="updateSieveRet(${idx}, this.value)" class="w-20 px-2 py-1 rounded-lg border border-slate-300 text-center font-bold eng-term" />
+          </td>
+          <td id="sieveCum_${idx}" class="p-2 text-center eng-term text-slate-600">0.0%</td>
+          <td id="sievePass_${idx}" class="p-2 text-center eng-term font-extrabold text-slate-900">100.0%</td>
+          <td id="sieveLim_${idx}" class="p-2 text-center eng-term text-slate-500">100–100</td>
+          <td id="sieveChk_${idx}" class="p-2 text-center"></td>
+        </tr>
+      `).join('');
+    }
+
+    function updateSieveRet(idx, val) {
+      SIEVE_DATA[idx].ret = Math.max(0, parseFloat(val) || 0);
+      calculateSieve();
+      classifySoil();
+      updateDashboard();
+    }
+
+    function interpolateDiameter(points, targetPass) {
+      for (let i = 0; i < points.length - 1; i++) {
+        const p1 = points[i];
+        const p2 = points[i + 1];
+        if ((p1.pass >= targetPass && p2.pass <= targetPass) || (p1.pass <= targetPass && p2.pass >= targetPass)) {
+          if (Math.abs(p1.pass - p2.pass) < 1e-6) return p1.size;
+          const frac = (targetPass - p2.pass) / (p1.pass - p2.pass);
+          const logD = Math.log10(p2.size) + frac * (Math.log10(p1.size) - Math.log10(p2.size));
+          return Math.pow(10, logD);
+        }
+      }
+      return points[points.length - 1].size;
+    }
+
+    function calculateSieve() {
+      const totalW = Math.max(1, parseFloat(document.getElementById('sieveTotalWeight').value) || 5000);
+      let cumRet = 0;
+      let allPass = true;
+      const curvePts = [];
+      const minLimits = [];
+      const maxLimits = [];
+
+      SIEVE_DATA.forEach((s, idx) => {
+        cumRet += s.ret;
+        const cumPct = Math.min(100, (cumRet / totalW) * 100);
+        const passPct = Math.max(0, 100 - cumPct);
+        labState.sievePassMap[s.name] = passPct;
+
+        const lo = targetLayer === 'base' ? s.baseMin : (targetLayer === 'subbase' ? s.subMin : s.sgMin);
+        const hi = targetLayer === 'base' ? s.baseMax : (targetLayer === 'subbase' ? s.subMax : s.sgMax);
+        const ok = passPct >= lo - 0.05 && passPct <= hi + 0.05;
+        if (!ok) allPass = false;
+
+        const cumCell = document.getElementById(`sieveCum_${idx}`);
+        const passCell = document.getElementById(`sievePass_${idx}`);
+        const limCell = document.getElementById(`sieveLim_${idx}`);
+        const chkCell = document.getElementById(`sieveChk_${idx}`);
+        if (cumCell) cumCell.textContent = cumPct.toFixed(1) + '%';
+        if (passCell) passCell.textContent = passPct.toFixed(1) + '%';
+        if (limCell) limCell.textContent = `${lo}–${hi}%`;
+        if (chkCell) {
+          chkCell.innerHTML = ok
+            ? '<span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800 eng-term">OK</span>'
+            : '<span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-100 text-rose-800 eng-term">OUT</span>';
+        }
+
+        curvePts.push({ x: s.size, y: Number(passPct.toFixed(2)), size: s.size, pass: passPct });
+        minLimits.push({ x: s.size, y: lo });
+        maxLimits.push({ x: s.size, y: hi });
+      });
+
+      const d10 = interpolateDiameter(curvePts, 10);
+      const d30 = interpolateDiameter(curvePts, 30);
+      const d60 = interpolateDiameter(curvePts, 60);
+      const cu = d60 / Math.max(0.001, d10);
+      const cc = (d30 * d30) / Math.max(0.0001, d60 * d10);
+
+      labState.d10 = d10;
+      labState.d30 = d30;
+      labState.d60 = d60;
+      labState.cu = cu;
+      labState.cc = cc;
+      labState.sievePassFlag = allPass;
+
+      document.getElementById('resD10').textContent = d10.toFixed(2);
+      document.getElementById('resD30').textContent = d30.toFixed(2);
+      document.getElementById('resD60').textContent = d60.toFixed(2);
+      document.getElementById('resCu').textContent = cu.toFixed(2);
+      document.getElementById('resCc').textContent = cc.toFixed(2);
+
+      const badge = document.getElementById('sieveStatusBadge');
+      badge.textContent = allPass ? 'PASS' : 'FAIL';
+      badge.className = allPass
+        ? 'px-3 py-1 rounded-full text-xs font-extrabold bg-emerald-100 text-emerald-800 eng-term'
+        : 'px-3 py-1 rounded-full text-xs font-extrabold bg-rose-100 text-rose-800 eng-term';
+
+      const pass200 = labState.sievePassMap['No. 200'] || 0;
+      document.getElementById('sieveMathSteps').textContent =
+        `1. % Passing = 100 - (Cumulative Retained Mass / ${totalW.toFixed(0)} g) × 100\n` +
+        `2. Fines Passing No. 200 (0.075 mm) = ${pass200.toFixed(1)}% (Spec Max ≤ ${LAYER_SPECS[targetLayer].maxFines}%)\n` +
+        `3. Uniformity Coefficient: Cu = D60 / D10 = ${d60.toFixed(2)} / ${d10.toFixed(2)} = ${cu.toFixed(2)}\n` +
+        `4. Coefficient of Curvature: Cc = (D30)² / (D60 × D10) = (${d30.toFixed(2)})² / (${d60.toFixed(2)} × ${d10.toFixed(2)}) = ${cc.toFixed(2)}`;
+
+      const ctx = document.getElementById('sieveChart');
+      if (ctx) {
+        if (charts.sieve) charts.sieve.destroy();
+        charts.sieve = new Chart(ctx, {
+          type: 'line',
+          data: {
+            datasets: [
+              {
+                label: 'Sample Gradation (% Passing)',
+                data: curvePts,
+                borderColor: '#f59e0b',
+                backgroundColor: '#f59e0b',
+                borderWidth: 3,
+                pointRadius: 4,
+                tension: 0.2
+              },
+              {
+                label: 'Upper Spec Limit',
+                data: maxLimits,
+                borderColor: '#0f172a',
+                borderDash: [6, 4],
+                borderWidth: 2,
+                pointRadius: 2,
+                fill: false
+              },
+              {
+                label: 'Lower Spec Limit',
+                data: minLimits,
+                borderColor: '#64748b',
+                borderDash: [6, 4],
+                borderWidth: 2,
+                pointRadius: 2,
+                fill: false
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              x: {
+                type: 'logarithmic',
+                reverse: true,
+                title: { display: true, text: 'Particle Diameter (mm) — Log Scale' }
+              },
+              y: {
+                min: 0,
+                max: 100,
+                title: { display: true, text: 'Percent Passing (%)' }
+              }
+            }
+          }
+        });
+      }
+    }
+
+    // ==================== 2. L.A. ABRASION ====================
+    function calculateLA() {
+      const w1 = Math.max(1, parseFloat(document.getElementById('laW1').value) || 5000);
+      const w2 = Math.min(w1, Math.max(0, parseFloat(document.getElementById('laW2').value) || 3880));
+      const lossMass = w1 - w2;
+      const lossPct = (lossMass / w1) * 100;
+      const spec = LAYER_SPECS[targetLayer];
+      const pass = !spec.laRequired ? true : lossPct <= spec.maxLA;
+
+      labState.laPercent = lossPct;
+      labState.laPassFlag = pass;
+
+      document.getElementById('laResultVal').textContent = lossPct.toFixed(1) + '%';
+      document.getElementById('laLimitText').textContent = spec.laRequired
+        ? `Maximum Allowable: ≤ ${spec.maxLA}%`
+        : 'Optional / Not Required for Natural Subgrade';
+
+      const badge = document.getElementById('laStatusBadge');
+      badge.textContent = !spec.laRequired ? 'N/A' : (pass ? 'PASS' : 'FAIL');
+      badge.className = !spec.laRequired
+        ? 'px-4 py-1.5 rounded-full text-xs font-extrabold bg-slate-200 text-slate-700 eng-term'
+        : (pass ? 'px-4 py-1.5 rounded-full text-xs font-extrabold bg-emerald-100 text-emerald-800 eng-term' : 'px-4 py-1.5 rounded-full text-xs font-extrabold bg-rose-100 text-rose-800 eng-term');
+
+      document.getElementById('laMathSteps').textContent =
+        `1. Grading Selected: ${document.getElementById('laGrading').value}\n` +
+        `2. Abraded Mass Passing No. 12 (1.70 mm) = W1 - W2 = ${w1.toFixed(0)} - ${w2.toFixed(0)} = ${lossMass.toFixed(0)} g\n` +
+        `3. L.A. Abrasion Loss (%) = [(W1 - W2) / W1] × 100 = (${lossMass.toFixed(0)} / ${w1.toFixed(0)}) × 100 = ${lossPct.toFixed(2)}%\n` +
+        `4. Specification Verification: ${spec.laRequired ? `${lossPct.toFixed(1)}% vs Max ${spec.maxLA}% → ${pass ? 'ACCEPTED (PASS)' : 'REJECTED (FAIL)'}` : 'N/A for Subgrade'}`;
+
+      const ctx = document.getElementById('laChart');
+      if (ctx) {
+        if (charts.la) charts.la.destroy();
+        charts.la = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: ['Measured L.A. Loss (%)', 'Allowable Max Limit (%)'],
+            datasets: [{
+              label: 'Abrasion Loss (%)',
+              data: [Number(lossPct.toFixed(1)), spec.maxLA],
+              backgroundColor: [pass ? '#10b981' : '#f43f5e', '#f59e0b'],
+              borderRadius: 6
+            }]
+          },
+          options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+              x: { beginAtZero: true, max: 65, ticks: { color: '#cbd5e1' }, grid: { color: 'rgba(148,163,184,0.15)' } },
+              y: { ticks: { color: '#f8fafc', font: { weight: 'bold' } }, grid: { display: false } }
+            }
+          }
+        });
+      }
+      updateDashboard();
+    }
+
+    // ==================== 3. MODIFIED PROCTOR ====================
+    function buildProctorTable() {
+      const tbody = document.getElementById('proctorTableBody');
+      if (!tbody) return;
+      tbody.innerHTML = PROCTOR_TRIALS.map((t, idx) => `
+        <tr class="hover:bg-slate-50">
+          <td class="p-2 text-center font-bold text-slate-700">#${idx + 1}</td>
+          <td class="p-2 text-center">
+            <input type="number" step="0.1" value="${t.w}" oninput="updateProctorTrial(${idx}, 'w', this.value)" class="w-16 px-2 py-1 rounded-lg border border-slate-300 text-center font-bold eng-term" />
+          </td>
+          <td class="p-2 text-center">
+            <input type="number" step="5" value="${t.wetMass}" oninput="updateProctorTrial(${idx}, 'wetMass', this.value)" class="w-20 px-2 py-1 rounded-lg border border-slate-300 text-center font-bold eng-term" />
+          </td>
+          <td id="procWet_${idx}" class="p-2 text-center eng-term text-slate-600">0.000</td>
+          <td id="procDry_${idx}" class="p-2 text-center eng-term font-extrabold text-slate-900">0.000</td>
+          <td id="procZav_${idx}" class="p-2 text-center eng-term text-blue-700">0.000</td>
+        </tr>
+      `).join('');
+    }
+
+    function updateProctorTrial(idx, field, val) {
+      PROCTOR_TRIALS[idx][field] = parseFloat(val) || 0;
+      calculateProctor();
+      updateDashboard();
+    }
+
+    function calculateProctor() {
+      const vol = Math.max(100, parseFloat(document.getElementById('proctorMoldVol').value) || 2124);
+      const gs = Math.max(1.5, parseFloat(document.getElementById('proctorGs').value) || 2.68);
+      const pts = [];
+      const zavPts = [];
+
+      PROCTOR_TRIALS.forEach((t, idx) => {
+        const wDec = t.w / 100;
+        const wetDens = t.wetMass / vol;
+        const dryDens = wetDens / (1 + wDec);
+        const zavDens = gs / (1 + wDec * gs);
+
+        const wetEl = document.getElementById(`procWet_${idx}`);
+        const dryEl = document.getElementById(`procDry_${idx}`);
+        const zavEl = document.getElementById(`procZav_${idx}`);
+        if (wetEl) wetEl.textContent = wetDens.toFixed(3);
+        if (dryEl) dryEl.textContent = dryDens.toFixed(3);
+        if (zavEl) zavEl.textContent = zavDens.toFixed(3);
+
+        pts.push({ x: t.w, y: Number(dryDens.toFixed(4)) });
+        zavPts.push({ x: t.w, y: Number(zavDens.toFixed(4)) });
+      });
+
+      // Parabolic peak interpolation around maximum dry density point
+      let maxIdx = 0;
+      pts.forEach((p, i) => { if (p.y > pts[maxIdx].y) maxIdx = i; });
+      let mdd = pts[maxIdx].y;
+      let omc = pts[maxIdx].x;
+
+      if (maxIdx > 0 && maxIdx < pts.length - 1) {
+        const x1 = pts[maxIdx - 1].x, y1 = pts[maxIdx - 1].y;
+        const x2 = pts[maxIdx].x, y2 = pts[maxIdx].y;
+        const x3 = pts[maxIdx + 1].x, y3 = pts[maxIdx + 1].y;
+        const denom = (x1 - x2) * (x1 - x3) * (x2 - x3);
+        if (Math.abs(denom) > 1e-6) {
+          const a = (x3 * (y2 - y1) + x2 * (y1 - y3) + x1 * (y3 - y2)) / denom;
+          const b = (x3 * x3 * (y1 - y2) + x2 * x2 * (y3 - y1) + x1 * x1 * (y2 - y3)) / denom;
+          const c = (x2 * x3 * (x2 - x3) * y1 + x3 * x1 * (x3 - x1) * y2 + x1 * x2 * (x1 - x2) * y3) / denom;
+          if (a < 0) {
+            const xPeak = -b / (2 * a);
+            const yPeak = a * xPeak * xPeak + b * xPeak + c;
+            if (yPeak >= y2 && xPeak >= x1 && xPeak <= x3) {
+              omc = xPeak;
+              mdd = yPeak;
+            }
+          }
+        }
+      }
+
+      labState.mdd = mdd;
+      labState.omc = omc;
+
+      document.getElementById('resMdd').textContent = mdd.toFixed(3);
+      document.getElementById('resOmc').textContent = omc.toFixed(1);
+
+      const reqDensity = mdd * (LAYER_SPECS[targetLayer].compactionPct / 100);
+      document.getElementById('proctorMathSteps').textContent =
+        `1. Wet Bulk Density: γ_wet = W_wet / V_mold (V = ${vol.toFixed(0)} cm³)\n` +
+        `2. Dry Density: γ_dry = γ_wet / (1 + w)\n` +
+        `3. Zero Air Voids Line: γ_zav = (Gs × γ_w) / (1 + w × Gs) with Gs = ${gs.toFixed(2)}\n` +
+        `4. Parabolic Peak Fit → MDD = ${mdd.toFixed(3)} g/cm³ at OMC = ${omc.toFixed(1)}%\n` +
+        `5. Minimum Field Dry Density (${LAYER_SPECS[targetLayer].compactionPct}% MDD) = ${reqDensity.toFixed(3)} g/cm³`;
+
+      const ctx = document.getElementById('proctorChart');
+      if (ctx) {
+        if (charts.proctor) charts.proctor.destroy();
+        charts.proctor = new Chart(ctx, {
+          type: 'scatter',
+          data: {
+            datasets: [
+              {
+                label: 'Compaction Curve (Dry Density)',
+                data: pts,
+                showLine: true,
+                borderColor: '#f59e0b',
+                backgroundColor: '#f59e0b',
+                borderWidth: 3,
+                pointRadius: 5,
+                tension: 0.35
+              },
+              {
+                label: 'Zero Air Voids (100% Saturation)',
+                data: zavPts,
+                showLine: true,
+                borderColor: '#2563eb',
+                backgroundColor: '#2563eb',
+                borderDash: [6, 4],
+                borderWidth: 2,
+                pointRadius: 3,
+                tension: 0.25
+              },
+              {
+                label: `Peak (MDD=${mdd.toFixed(3)}, OMC=${omc.toFixed(1)}%)`,
+                data: [{ x: Number(omc.toFixed(2)), y: Number(mdd.toFixed(4)) }],
+                backgroundColor: '#0f172a',
+                borderColor: '#ffffff',
+                borderWidth: 2,
+                pointRadius: 7
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              x: { title: { display: true, text: 'Moisture Content w (%)' } },
+              y: { title: { display: true, text: 'Dry Density γ_dry (g/cm³)' } }
+            }
+          }
+        });
+      }
+    }
+
+    // ==================== 4. SOAKED CBR ====================
+    function buildCbrTable() {
+      const tbody = document.getElementById('cbrTableBody');
+      if (!tbody) return;
+      tbody.innerHTML = CBR_PENETRATIONS.map((pen, idx) => `
+        <tr class="${(pen === 2.5 || pen === 5.0) ? 'bg-amber-50/70' : 'hover:bg-slate-50'}">
+          <td class="p-1.5 text-center font-extrabold eng-term text-slate-800">${pen.toFixed(1)}</td>
+          <td class="p-1.5 text-center">
+            <input type="number" step="0.1" value="${CBR_LOADS.b10[idx]}" oninput="updateCbrLoad('b10', ${idx}, this.value)" class="w-16 px-1.5 py-0.5 rounded border border-slate-300 text-center font-bold eng-term" />
+          </td>
+          <td class="p-1.5 text-center">
+            <input type="number" step="0.1" value="${CBR_LOADS.b30[idx]}" oninput="updateCbrLoad('b30', ${idx}, this.value)" class="w-16 px-1.5 py-0.5 rounded border border-slate-300 text-center font-bold eng-term" />
+          </td>
+          <td class="p-1.5 text-center">
+            <input type="number" step="0.1" value="${CBR_LOADS.b65[idx]}" oninput="updateCbrLoad('b65', ${idx}, this.value)" class="w-16 px-1.5 py-0.5 rounded border border-slate-300 text-center font-bold eng-term" />
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function updateCbrLoad(mold, idx, val) {
+      CBR_LOADS[mold][idx] = Math.max(0, parseFloat(val) || 0);
+      calculateCBR();
+      calculateResilientModulus();
+      updateDashboard();
+    }
+
+    function computeMoldCBR(loadsArr) {
+      // Piston area = 1935 mm2 => Stress (MPa) = Load (kN) * 1000 / 1935
+      const stresses = loadsArr.map(kN => (kN * 1000) / 1935);
+      // Check upward concavity between 0-1.0 mm vs 1.0-2.5 mm
+      const slope1 = (stresses[1] - 0) / 1.0;
+      const slope2 = (stresses[4] - stresses[1]) / 1.5;
+      let corrected = false;
+      let s25 = stresses[4];
+      let s50 = stresses[7];
+
+      if (slope2 > slope1 * 1.15) {
+        corrected = true;
+        const pZero = 1.0 - (stresses[1] / slope2);
+        s25 = slope2 * (2.5 + Math.max(0, pZero));
+        s50 = stresses[7] + slope2 * Math.max(0, pZero);
+      }
+
+      const cbr25 = (s25 / 6.9) * 100;
+      const cbr50 = (s50 / 10.3) * 100;
+      const governing = Math.max(cbr25, cbr50);
+      return { stresses, cbr25, cbr50, governing, corrected };
+    }
+
+    function calculateCBR() {
+      const m10 = computeMoldCBR(CBR_LOADS.b10);
+      const m30 = computeMoldCBR(CBR_LOADS.b30);
+      const m65 = computeMoldCBR(CBR_LOADS.b65);
+
+      const gd10 = parseFloat(document.getElementById('cbrGd10').value) || 2.045;
+      const gd30 = parseFloat(document.getElementById('cbrGd30').value) || 2.155;
+      const gd65 = parseFloat(document.getElementById('cbrGd65').value) || 2.240;
+
+      const targetPct = parseFloat(document.getElementById('cbrTargetComp').value) || LAYER_SPECS[targetLayer].compactionPct;
+      const targetGd = labState.mdd * (targetPct / 100);
+
+      const densityPts = [
+        { x: gd10, y: Number(m10.governing.toFixed(1)) },
+        { x: gd30, y: Number(m30.governing.toFixed(1)) },
+        { x: gd65, y: Number(m65.governing.toFixed(1)) }
+      ].sort((a, b) => a.x - b.x);
+
+      // Piecewise linear interpolation / extrapolation at target dry density
+      let designCBR = densityPts[1].y;
+      if (targetGd <= densityPts[1].x) {
+        const dx = Math.max(0.001, densityPts[1].x - densityPts[0].x);
+        designCBR = densityPts[0].y + ((targetGd - densityPts[0].x) / dx) * (densityPts[1].y - densityPts[0].y);
+      } else {
+        const dx = Math.max(0.001, densityPts[2].x - densityPts[1].x);
+        designCBR = densityPts[1].y + ((targetGd - densityPts[1].x) / dx) * (densityPts[2].y - densityPts[1].y);
+      }
+      designCBR = Math.max(1, designCBR);
+
+      const spec = LAYER_SPECS[targetLayer];
+      const pass = designCBR >= spec.minCBR;
+
+      labState.designCBR = designCBR;
+      labState.cbrPassFlag = pass;
+
+      document.getElementById('resDesignCbr').textContent = designCBR.toFixed(1);
+      const badge = document.getElementById('cbrStatusBadge');
+      badge.textContent = pass ? 'PASS' : 'FAIL';
+      badge.className = pass
+        ? 'px-3 py-1 rounded-full text-xs font-extrabold bg-emerald-100 text-emerald-800 eng-term'
+        : 'px-3 py-1 rounded-full text-xs font-extrabold bg-rose-100 text-rose-800 eng-term';
+
+      document.getElementById('cbrMathSteps').textContent =
+        `1. Piston Area = 1,935 mm² | Standard Stress: 6.9 MPa @ 2.5 mm & 10.3 MPa @ 5.0 mm\n` +
+        `2. Mold CBR Results: 10 Blows = ${m10.governing.toFixed(1)}% | 30 Blows = ${m30.governing.toFixed(1)}% | 65 Blows = ${m65.governing.toFixed(1)}%\n` +
+        `3. Concavity Correction Applied: ${m10.corrected || m30.corrected || m65.corrected ? 'Yes (Zero-Slope Adjusted)' : 'Not Required (Linear Initial Slope)'}\n` +
+        `4. Target Dry Density (${targetPct}% of MDD ${labState.mdd.toFixed(3)}) = ${targetGd.toFixed(3)} g/cm³\n` +
+        `5. Interpolated Design CBR = ${designCBR.toFixed(1)}% (Spec Min ≥ ${spec.minCBR}% → ${pass ? 'PASS' : 'FAIL'})`;
+
+      // Load-Penetration Chart
+      const ctx1 = document.getElementById('cbrLoadChart');
+      if (ctx1) {
+        if (charts.cbrLoad) charts.cbrLoad.destroy();
+        charts.cbrLoad = new Chart(ctx1, {
+          type: 'line',
+          data: {
+            labels: CBR_PENETRATIONS.map(p => p.toFixed(1)),
+            datasets: [
+              { label: '65 Blows (MPa)', data: m65.stresses.map(v => Number(v.toFixed(2))), borderColor: '#f59e0b', borderWidth: 2.5, pointRadius: 2, tension: 0.25 },
+              { label: '30 Blows (MPa)', data: m30.stresses.map(v => Number(v.toFixed(2))), borderColor: '#2563eb', borderWidth: 2.5, pointRadius: 2, tension: 0.25 },
+              { label: '10 Blows (MPa)', data: m10.stresses.map(v => Number(v.toFixed(2))), borderColor: '#64748b', borderWidth: 2, pointRadius: 2, tension: 0.25 }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { title: { display: true, text: 'Load-Penetration Curves' } },
+            scales: {
+              x: { title: { display: true, text: 'Penetration (mm)' } },
+              y: { beginAtZero: true, title: { display: true, text: 'Stress (MPa)' } }
+            }
+          }
+        });
+      }
+
+      // Dry Density vs CBR Chart
+      const ctx2 = document.getElementById('cbrDensityChart');
+      if (ctx2) {
+        if (charts.cbrDens) charts.cbrDens.destroy();
+        charts.cbrDens = new Chart(ctx2, {
+          type: 'scatter',
+          data: {
+            datasets: [
+              {
+                label: '3-Mold CBR Curve',
+                data: densityPts,
+                showLine: true,
+                borderColor: '#0f172a',
+                backgroundColor: '#0f172a',
+                borderWidth: 2.5,
+                pointRadius: 5,
+                tension: 0.2
+              },
+              {
+                label: `Design CBR (${designCBR.toFixed(1)}%)`,
+                data: [{ x: Number(targetGd.toFixed(3)), y: Number(designCBR.toFixed(1)) }],
+                backgroundColor: '#10b981',
+                borderColor: '#065f46',
+                borderWidth: 2,
+                pointRadius: 7
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { title: { display: true, text: `Dry Density vs. CBR (@ ${targetPct}% MDD)` } },
+            scales: {
+              x: { title: { display: true, text: 'Dry Density (g/cm³)' } },
+              y: { beginAtZero: true, title: { display: true, text: 'Soaked CBR (%)' } }
+            }
+          }
+        });
+      }
+    }
+
+    // ==================== 5. ATTERBERG LIMITS ====================
+    function calculateAtterberg() {
+      const isNP = document.getElementById('attNonPlastic').checked;
+      const spec = LAYER_SPECS[targetLayer];
+
+      if (isNP) {
+        labState.isNP = true;
+        labState.ll = 0;
+        labState.pl = 0;
+        labState.pi = 0;
+        labState.attPassFlag = true;
+
+        document.getElementById('resLl').textContent = 'NP';
+        document.getElementById('resPl').textContent = 'NP';
+        document.getElementById('resPi').textContent = 'NP (0%)';
+
+        const badge = document.getElementById('attStatusBadge');
+        badge.textContent = 'PASS (NP)';
+        badge.className = 'px-3 py-1 rounded-full text-xs font-extrabold bg-emerald-100 text-emerald-800 eng-term';
+
+        document.getElementById('attMathSteps').textContent =
+          `1. Sample verified as Non-Plastic (NP) per ASTM D4318 / AASHTO T90.\n` +
+          `2. Liquid Limit (LL) = NP | Plastic Limit (PL) = NP | Plasticity Index (PI) = 0%.\n` +
+          `3. Specification Check: Non-Plastic granular material satisfies all layer plasticity limits (PASS).`;
+        classifySoil();
+        updateDashboard();
+        return;
+      }
+
+      labState.isNP = false;
+      const trials = [
+        { n: Math.max(5, parseFloat(document.getElementById('llN1').value) || 34), w: parseFloat(document.getElementById('llW1').value) || 18.6 },
+        { n: Math.max(5, parseFloat(document.getElementById('llN2').value) || 25), w: parseFloat(document.getElementById('llW2').value) || 19.5 },
+        { n: Math.max(5, parseFloat(document.getElementById('llN3').value) || 17), w: parseFloat(document.getElementById('llW3').value) || 20.6 }
+      ];
+
+      // Semi-log linear regression: w = m * log10(N) + c
+      const xs = trials.map(t => Math.log10(t.n));
+      const ys = trials.map(t => t.w);
+      const meanX = xs.reduce((a, b) => a + b, 0) / 3;
+      const meanY = ys.reduce((a, b) => a + b, 0) / 3;
+      let num = 0, den = 0;
+      for (let i = 0; i < 3; i++) {
+        num += (xs[i] - meanX) * (ys[i] - meanY);
+        den += (xs[i] - meanX) * (xs[i] - meanX);
+      }
+      const slope = Math.abs(den) > 1e-6 ? num / den : 0;
+      const intercept = meanY - slope * meanX;
+      const ll = slope * Math.log10(25) + intercept;
+
+      const pl1 = parseFloat(document.getElementById('plW1').value) || 15.8;
+      const pl2 = parseFloat(document.getElementById('plW2').value) || 16.2;
+      const pl = (pl1 + pl2) / 2;
+      const pi = Math.max(0, ll - pl);
+
+      const pass = ll <= spec.maxLL && pi <= spec.maxPI;
+
+      labState.ll = ll;
+      labState.pl = pl;
+      labState.pi = pi;
+      labState.attPassFlag = pass;
+
+      document.getElementById('resLl').textContent = ll.toFixed(1) + '%';
+      document.getElementById('resPl').textContent = pl.toFixed(1) + '%';
+      document.getElementById('resPi').textContent = pi.toFixed(1) + '%';
+
+      const badge = document.getElementById('attStatusBadge');
+      badge.textContent = pass ? 'PASS' : 'FAIL';
+      badge.className = pass
+        ? 'px-3 py-1 rounded-full text-xs font-extrabold bg-emerald-100 text-emerald-800 eng-term'
+        : 'px-3 py-1 rounded-full text-xs font-extrabold bg-rose-100 text-rose-800 eng-term';
+
+      const aLinePi = Math.max(0, 0.73 * (ll - 20));
+      document.getElementById('attMathSteps').textContent =
+        `1. Semi-Log Flow Curve: w(%) = ${slope.toFixed(2)}·log10(N) + ${intercept.toFixed(2)}\n` +
+        `2. Liquid Limit at N = 25 Blows: LL = ${ll.toFixed(1)}% (Spec Max ≤ ${spec.maxLL}%)\n` +
+        `3. Plastic Limit (Average): PL = (${pl1.toFixed(1)} + ${pl2.toFixed(1)}) / 2 = ${pl.toFixed(1)}%\n` +
+        `4. Plasticity Index: PI = LL - PL = ${ll.toFixed(1)} - ${pl.toFixed(1)} = ${pi.toFixed(1)}% (Spec Max ≤ ${spec.maxPI}%)\n` +
+        `5. Casagrande A-Line Reference at LL=${ll.toFixed(1)}%: PI_A-Line = 0.73×(LL - 20) = ${aLinePi.toFixed(1)}%`;
+
+      // Flow Curve Chart
+      const ctxFlow = document.getElementById('flowChart');
+      if (ctxFlow) {
+        if (charts.flow) charts.flow.destroy();
+        charts.flow = new Chart(ctxFlow, {
+          type: 'scatter',
+          data: {
+            datasets: [
+              {
+                label: 'Flow Curve Trials',
+                data: trials.map(t => ({ x: t.n, y: t.w })),
+                backgroundColor: '#f59e0b',
+                pointRadius: 5
+              },
+              {
+                label: 'Best-Fit Flow Line',
+                data: [
+                  { x: 10, y: Number((slope * Math.log10(10) + intercept).toFixed(2)) },
+                  { x: 45, y: Number((slope * Math.log10(45) + intercept).toFixed(2)) }
+                ],
+                showLine: true,
+                borderColor: '#0f172a',
+                borderWidth: 2,
+                pointRadius: 0
+              },
+              {
+                label: `LL @ 25 Blows (${ll.toFixed(1)}%)`,
+                data: [{ x: 25, y: Number(ll.toFixed(2)) }],
+                backgroundColor: '#10b981',
+                pointRadius: 7
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { title: { display: true, text: 'Liquid Limit Flow Curve' } },
+            scales: {
+              x: { type: 'logarithmic', min: 10, max: 50, title: { display: true, text: 'Number of Blows (N)' } },
+              y: { title: { display: true, text: 'Moisture Content w (%)' } }
+            }
+          }
+        });
+      }
+
+      // Casagrande Plasticity Chart
+      const ctxCasa = document.getElementById('casagrandeChart');
+      if (ctxCasa) {
+        if (charts.casagrande) charts.casagrande.destroy();
+        charts.casagrande = new Chart(ctxCasa, {
+          type: 'scatter',
+          data: {
+            datasets: [
+              {
+                label: 'A-Line: PI = 0.73(LL - 20)',
+                data: [{ x: 20, y: 0 }, { x: 80, y: 43.8 }],
+                showLine: true,
+                borderColor: '#2563eb',
+                borderWidth: 2,
+                pointRadius: 0
+              },
+              {
+                label: 'U-Line: PI = 0.90(LL - 8)',
+                data: [{ x: 8, y: 0 }, { x: 70, y: 55.8 }],
+                showLine: true,
+                borderColor: '#94a3b8',
+                borderDash: [5, 4],
+                borderWidth: 1.5,
+                pointRadius: 0
+              },
+              {
+                label: `Sample (LL=${ll.toFixed(1)}, PI=${pi.toFixed(1)})`,
+                data: [{ x: Number(ll.toFixed(1)), y: Number(pi.toFixed(1)) }],
+                backgroundColor: '#f59e0b',
+                borderColor: '#0f172a',
+                borderWidth: 2,
+                pointRadius: 7
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { title: { display: true, text: 'Casagrande Plasticity Chart' } },
+            scales: {
+              x: { min: 0, max: 80, title: { display: true, text: 'Liquid Limit LL (%)' } },
+              y: { min: 0, max: 50, title: { display: true, text: 'Plasticity Index PI (%)' } }
+            }
+          }
+        });
+      }
+
+      classifySoil();
+      updateDashboard();
+    }
+
+    // ==================== 6. AASHTO M 145 & USCS CLASSIFICATION ====================
+    function classifySoil() {
+      const p4 = labState.sievePassMap['No. 4'] ?? 42;
+      const p10 = labState.sievePassMap['No. 10'] ?? 26.8;
+      const p40 = labState.sievePassMap['No. 40'] ?? 13.0;
+      const p200 = labState.sievePassMap['No. 200'] ?? 5.2;
+      const ll = labState.isNP ? 0 : labState.ll;
+      const pi = labState.isNP ? 0 : labState.pi;
+
+      // AASHTO M 145 Left-to-Right Classification
+      let group = 'A-7-6';
+      let desc = 'Clayey Soil — Fair to Poor Subgrade';
+      let gi = 0;
+
+      if (p200 <= 35) {
+        if (p10 <= 50 && p40 <= 30 && p200 <= 15 && pi <= 6) {
+          group = 'A-1-a';
+          desc = 'Stone Fragments, Gravel & Sand — Excellent Base/Subbase';
+          gi = 0;
+        } else if (p40 <= 50 && p200 <= 25 && pi <= 6) {
+          group = 'A-1-b';
+          desc = 'Coarse Sand & Gravel — Excellent Subbase/Subgrade';
+          gi = 0;
+        } else if (p40 >= 51 && p200 <= 10 && (labState.isNP || pi === 0)) {
+          group = 'A-3';
+          desc = 'Fine Clean Beach/Dune Sand — Good Subgrade';
+          gi = 0;
+        } else {
+          if (ll <= 40 && pi <= 10) { group = 'A-2-4'; desc = 'Silty or Clayey Gravel & Sand — Good Subbase/Subgrade'; }
+          else if (ll >= 41 && pi <= 10) { group = 'A-2-5'; desc = 'Silty Gravel & Sand (High LL) — Good Subgrade'; }
+          else if (ll <= 40 && pi >= 11) { group = 'A-2-6'; desc = 'Clayey Gravel & Sand — Fair to Good Subgrade'; }
+          else { group = 'A-2-7'; desc = 'Clayey Gravel & Sand (High LL) — Fair Subgrade'; }
+          gi = Math.max(0, Math.round(0.01 * (p200 - 15) * (pi - 10)));
+        }
+      } else {
+        if (ll <= 40 && pi <= 10) { group = 'A-4'; desc = 'Non-Plastic to Moderately Plastic Silty Soil'; }
+        else if (ll >= 41 && pi <= 10) { group = 'A-5'; desc = 'Elastic Micaceous / Diatomaceous Silty Soil'; }
+        else if (ll <= 40 && pi >= 11) { group = 'A-6'; desc = 'Medium Plasticity Clayey Soil'; }
+        else {
+          if (pi <= ll - 30) { group = 'A-7-5'; desc = 'High Plasticity Elastic Clay'; }
+          else { group = 'A-7-6'; desc = 'High Plasticity Fat Clay (High Volume Change)'; }
+        }
+        const rawGi = (p200 - 35) * (0.2 + 0.005 * (ll - 40)) + 0.01 * (p200 - 15) * (pi - 10);
+        gi = Math.max(0, Math.round(rawGi));
+      }
+
+      const aashtoFull = `${group} (${gi})`;
+
+      // USCS ASTM D2487 Classification
+      let uscs = 'GW';
+      let uscsDesc = 'Well-Graded Gravel with Sand';
+      const aLine = 0.73 * (ll - 20);
+      const isClay = !labState.isNP && pi > 7 && pi >= aLine;
+
+      if (p200 < 50) {
+        const gravelPct = 100 - p4;
+        const sandPct = p4 - p200;
+        const isGravel = gravelPct >= sandPct;
+        const prefix = isGravel ? 'G' : 'S';
+        const wellGraded = isGravel
+          ? (labState.cu >= 4 && labState.cc >= 1 && labState.cc <= 3)
+          : (labState.cu >= 6 && labState.cc >= 1 && labState.cc <= 3);
+
+        if (p200 < 5) {
+          uscs = prefix + (wellGraded ? 'W' : 'P');
+        } else if (p200 <= 12) {
+          const g1 = prefix + (wellGraded ? 'W' : 'P');
+          const g2 = prefix + (isClay ? 'C' : 'M');
+          uscs = `${g1}-${g2}`;
+        } else {
+          uscs = prefix + (isClay ? 'C' : 'M');
+        }
+      } else {
+        if (ll < 50) {
+          uscs = isClay ? 'CL' : 'ML';
+        } else {
+          uscs = isClay ? 'CH' : 'MH';
+        }
+      }
+
+      const uscsNames = {
+        'GW': 'Well-Graded Gravel with Sand',
+        'GP': 'Poorly Graded Gravel',
+        'GM': 'Silty Gravel with Sand',
+        'GC': 'Clayey Gravel with Sand',
+        'GW-GM': 'Well-Graded Gravel with Silt & Sand',
+        'GW-GC': 'Well-Graded Gravel with Clay & Sand',
+        'GP-GM': 'Poorly Graded Gravel with Silt',
+        'GP-GC': 'Poorly Graded Gravel with Clay',
+        'SW': 'Well-Graded Sand with Gravel',
+        'SP': 'Poorly Graded Sand',
+        'SM': 'Silty Sand',
+        'SC': 'Clayey Sand',
+        'SW-SM': 'Well-Graded Sand with Silt',
+        'SW-SC': 'Well-Graded Sand with Clay',
+        'CL': 'Lean Clay (Low Plasticity)',
+        'ML': 'Inorganic Silt (Low Plasticity)',
+        'CH': 'Fat Clay (High Plasticity)',
+        'MH': 'Elastic Silt (High Plasticity)'
+      };
+      uscsDesc = uscsNames[uscs] || 'Engineered Soil / Aggregate';
+
+      labState.aashtoGroup = aashtoFull;
+      labState.uscsSymbol = uscs;
+
+      document.getElementById('resAashtoGroup').textContent = aashtoFull;
+      document.getElementById('resAashtoDesc').textContent = desc;
+      document.getElementById('resUscsSymbol').textContent = uscs;
+      document.getElementById('resUscsDesc').textContent = uscsDesc;
+
+      const summaryGrid = document.getElementById('classifyInputsSummary');
+      if (summaryGrid) {
+        summaryGrid.innerHTML = [
+          { k: 'Passing No. 4', v: p4.toFixed(1) + '%' },
+          { k: 'Passing No. 10', v: p10.toFixed(1) + '%' },
+          { k: 'Passing No. 40', v: p40.toFixed(1) + '%' },
+          { k: 'Passing No. 200', v: p200.toFixed(1) + '%' },
+          { k: 'Liquid Limit (LL)', v: labState.isNP ? 'NP' : ll.toFixed(1) + '%' },
+          { k: 'Plasticity Index (PI)', v: labState.isNP ? 'NP' : pi.toFixed(1) + '%' }
+        ].map(item => `
+          <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+            <div class="text-[10px] font-bold text-slate-500">${item.k}</div>
+            <div class="text-sm font-black text-slate-900 eng-term mt-0.5">${item.v}</div>
+          </div>
+        `).join('');
+      }
+
+      document.getElementById('classifyMathSteps').textContent =
+        `1. AASHTO M 145 Evaluation:\n` +
+        `   • % Passing No. 200 = ${p200.toFixed(1)}% (${p200 <= 35 ? '≤ 35% → Granular Material' : '> 35% → Silt-Clay Material'})\n` +
+        `   • Group Assigned: ${aashtoFull} — ${desc}\n` +
+        `   • Group Index Formula: GI = (F200 - 35)[0.2 + 0.005(LL - 40)] + 0.01(F200 - 15)(PI - 10) = ${gi}\n\n` +
+        `2. USCS (ASTM D2487) Evaluation:\n` +
+        `   • Coarse vs. Fine Split: Passing No. 200 = ${p200.toFixed(1)}% (${p200 < 50 ? 'Coarse-Grained' : 'Fine-Grained'})\n` +
+        `   • Gradation Shape: Cu = ${labState.cu.toFixed(2)}, Cc = ${labState.cc.toFixed(2)}\n` +
+        `   • Unified Symbol: ${uscs} (${uscsDesc})`;
+    }
+
+    // ==================== 7. RESILIENT MODULUS Mr ====================
+    function buildMrTable() {
+      const tbody = document.getElementById('mrTableBody');
+      if (!tbody) return;
+      tbody.innerHTML = MR_SEQUENCES.map((q, idx) => `
+        <tr class="hover:bg-slate-50">
+          <td class="p-1.5 text-center font-bold text-slate-700">#${idx + 1}</td>
+          <td class="p-1.5 text-center">
+            <input type="number" step="1" value="${q.s3}" oninput="updateMrSeq(${idx}, 's3', this.value)" class="w-16 px-1.5 py-0.5 rounded border border-slate-300 text-center font-bold eng-term" />
+          </td>
+          <td class="p-1.5 text-center">
+            <input type="number" step="1" value="${q.sd}" oninput="updateMrSeq(${idx}, 'sd', this.value)" class="w-16 px-1.5 py-0.5 rounded border border-slate-300 text-center font-bold eng-term" />
+          </td>
+          <td class="p-1.5 text-center">
+            <input type="number" step="5" value="${q.er}" oninput="updateMrSeq(${idx}, 'er', this.value)" class="w-16 px-1.5 py-0.5 rounded border border-slate-300 text-center font-bold eng-term" />
+          </td>
+          <td id="mrTheta_${idx}" class="p-1.5 text-center eng-term text-slate-600">0.0</td>
+          <td id="mrVal_${idx}" class="p-1.5 text-center eng-term font-extrabold text-slate-900">0.0</td>
+        </tr>
+      `).join('');
+    }
+
+    function updateMrSeq(idx, field, val) {
+      MR_SEQUENCES[idx][field] = Math.max(1, parseFloat(val) || 1);
+      calculateResilientModulus();
+      syncDesignFromLab(false);
+      updateDashboard();
+    }
+
+    function calculateResilientModulus() {
+      const Pa = 101.325; // kPa atmospheric pressure
+      const pts = [];
+      const logX = [];
+      const logY = [];
+
+      MR_SEQUENCES.forEach((q, idx) => {
+        const theta = q.sd + 3 * q.s3; // Bulk stress in kPa
+        const mrMpa = (q.sd * 1000) / q.er; // kPa / (10^-6) = MPa * 1000 => (sd kPa) / (er * 1e-6) / 1000 = sd * 1000 / er
+        const thEl = document.getElementById(`mrTheta_${idx}`);
+        const valEl = document.getElementById(`mrVal_${idx}`);
+        if (thEl) thEl.textContent = theta.toFixed(1);
+        if (valEl) valEl.textContent = mrMpa.toFixed(1);
+
+        pts.push({ x: Number(theta.toFixed(1)), y: Number(mrMpa.toFixed(1)) });
+        logX.push(Math.log10(theta / Pa));
+        logY.push(Math.log10(mrMpa));
+      });
+
+      // Power model regression: Mr = k1 * (theta / Pa)^k2
+      const n = logX.length;
+      const mx = logX.reduce((a, b) => a + b, 0) / n;
+      const my = logY.reduce((a, b) => a + b, 0) / n;
+      let num = 0, den = 0;
+      for (let i = 0; i < n; i++) {
+        num += (logX[i] - mx) * (logY[i] - my);
+        den += (logX[i] - mx) * (logX[i] - mx);
+      }
+      const k2 = Math.abs(den) > 1e-6 ? num / den : 0.45;
+      const k1 = Math.pow(10, my - k2 * mx);
+
+      const refTheta = Math.max(20, parseFloat(document.getElementById('mrRefTheta').value) || 208);
+      const designMrMpa = k1 * Math.pow(refTheta / Pa, k2);
+      const designMrPsi = designMrMpa * 145.038;
+
+      // Empirical CBR correlation
+      const cbr = labState.designCBR;
+      const empMrMpa = cbr <= 10
+        ? (1500 * cbr) / 145.038
+        : 17.6 * Math.pow(cbr, 0.64);
+
+      // AASHTO 1993 Structural Layer Coefficient
+      let coeffLabel = '';
+      if (targetLayer === 'base') {
+        const a2 = Math.max(0.05, 0.249 * Math.log10(designMrPsi) - 0.977);
+        coeffLabel = `a2 = ${a2.toFixed(3)}`;
+      } else if (targetLayer === 'subbase') {
+        const a3 = Math.max(0.04, 0.227 * Math.log10(designMrPsi) - 0.839);
+        coeffLabel = `a3 = ${a3.toFixed(3)}`;
+      } else {
+        coeffLabel = `Subgrade Mr`;
+      }
+
+      const spec = LAYER_SPECS[targetLayer];
+      const pass = designMrMpa >= spec.minMr;
+
+      labState.triaxialMrMpa = designMrMpa;
+      labState.triaxialMrPsi = designMrPsi;
+      labState.empiricalMrMpa = empMrMpa;
+      labState.layerCoeffLabel = coeffLabel;
+      labState.mrPassFlag = pass;
+
+      document.getElementById('resMrTriaxial').textContent = `${designMrMpa.toFixed(0)} MPa`;
+      document.getElementById('resMrEmpirical').textContent = `${empMrMpa.toFixed(0)} MPa`;
+      document.getElementById('resLayerCoeff').textContent = coeffLabel;
+
+      const badge = document.getElementById('mrStatusBadge');
+      badge.textContent = pass ? 'PASS' : 'FAIL';
+      badge.className = pass
+        ? 'px-3 py-1 rounded-full text-xs font-extrabold bg-emerald-100 text-emerald-800 eng-term'
+        : 'px-3 py-1 rounded-full text-xs font-extrabold bg-rose-100 text-rose-800 eng-term';
+
+      document.getElementById('mrMathSteps').textContent =
+        `1. Resilient Modulus per Sequence: Mr = σ_d / ε_r\n` +
+        `2. Bulk Stress Model: Mr = k1 · (θ / Pa)^k2 → k1 = ${k1.toFixed(1)} MPa, k2 = ${k2.toFixed(3)} (Pa = 101.3 kPa)\n` +
+        `3. Design Mr at Reference θ = ${refTheta.toFixed(0)} kPa: Mr = ${designMrMpa.toFixed(1)} MPa (${designMrPsi.toLocaleString('en-US', { maximumFractionDigits: 0 })} psi)\n` +
+        `4. Empirical CBR Correlation (CBR = ${cbr.toFixed(1)}%): Mr_emp = ${empMrMpa.toFixed(1)} MPa\n` +
+        `5. AASHTO 1993 Structural Coefficient: ${coeffLabel} (Spec Min Mr ≥ ${spec.minMr} MPa → ${pass ? 'PASS' : 'FAIL'})`;
+
+      const fitPts = [];
+      for (let th = 60; th <= 540; th += 40) {
+        fitPts.push({ x: th, y: Number((k1 * Math.pow(th / Pa, k2)).toFixed(1)) });
+      }
+
+      const ctx = document.getElementById('mrChart');
+      if (ctx) {
+        if (charts.mr) charts.mr.destroy();
+        charts.mr = new Chart(ctx, {
+          type: 'scatter',
+          data: {
+            datasets: [
+              {
+                label: 'Measured AASHTO T 307 Points',
+                data: pts,
+                backgroundColor: '#f59e0b',
+                pointRadius: 5
+              },
+              {
+                label: `Bulk Stress Fit (k1=${k1.toFixed(0)}, k2=${k2.toFixed(2)})`,
+                data: fitPts,
+                showLine: true,
+                borderColor: '#0f172a',
+                borderWidth: 2.5,
+                pointRadius: 0
+              },
+              {
+                label: `Design Mr (${designMrMpa.toFixed(0)} MPa @ θ=${refTheta})`,
+                data: [{ x: refTheta, y: Number(designMrMpa.toFixed(1)) }],
+                backgroundColor: '#10b981',
+                pointRadius: 7
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              x: { title: { display: true, text: 'Bulk Stress θ = σd + 3σ3 (kPa)' } },
+              y: { beginAtZero: true, title: { display: true, text: 'Resilient Modulus Mr (MPa)' } }
+            }
+          }
+        });
+      }
+    }
+
+    // ==================== 8. FLEXIBLE PAVEMENT DESIGN (AASHTO 1993) ====================
+    function syncDesignFromLab(notify = true) {
+      const mrVal = Math.round(labState.triaxialMrMpa);
+      if (targetLayer === 'base') {
+        document.getElementById('desEbase').value = mrVal;
+      } else if (targetLayer === 'subbase') {
+        document.getElementById('desEsubbase').value = mrVal;
+      } else {
+        document.getElementById('desMrSubgrade').value = mrVal;
+      }
+      calculatePavementDesign();
+      if (notify) showToast(`Synced ${targetLayer.toUpperCase()} modulus (${mrVal} MPa) into AASHTO 1993 Design`);
+    }
+
+    function solveAashto1993SN(W18, Zr, So, dPsi, MrPsi) {
+      const targetLogW = Math.log10(Math.max(1000, W18));
+      const psiTerm = Math.log10(Math.max(0.1, dPsi) / (4.2 - 1.5));
+      let lo = 0.5, hi = 12.0;
+
+      for (let iter = 0; iter < 50; iter++) {
+        const sn = (lo + hi) / 2;
+        const denom = 0.40 + (1094 / Math.pow(sn + 1, 5.19));
+        const predLogW = Zr * So + 9.36 * Math.log10(sn + 1) - 0.20 + (psiTerm / denom) + 2.32 * Math.log10(MrPsi) - 8.07;
+        if (predLogW < targetLogW) lo = sn;
+        else hi = sn;
+      }
+      return (lo + hi) / 2;
+    }
+
+    function calculatePavementDesign() {
+      const W18 = Math.max(10000, parseFloat(document.getElementById('desW18').value) || 5000000);
+      const rel = parseInt(document.getElementById('desReliability').value, 10) || 95;
+      const zrMap = { 85: -1.037, 90: -1.282, 95: -1.645, 99: -2.327 };
+      const Zr = zrMap[rel] ?? -1.645;
+      const So = parseFloat(document.getElementById('desSo').value) || 0.45;
+      const dPsi = parseFloat(document.getElementById('desDeltaPsi').value) || 1.7;
+
+      const eAcMpa = Math.max(500, parseFloat(document.getElementById('desEac').value) || 3100);
+      const eBsMpa = Math.max(50, parseFloat(document.getElementById('desEbase').value) || 246);
+      const eSbMpa = Math.max(30, parseFloat(document.getElementById('desEsubbase').value) || 125);
+      const mrSgMpa = Math.max(15, parseFloat(document.getElementById('desMrSubgrade').value) || 75);
+
+      const m2 = parseFloat(document.getElementById('desM2').value) || 1.0;
+      const m3 = parseFloat(document.getElementById('desM3').value) || 1.0;
+
+      const eAcPsi = eAcMpa * 145.038;
+      const eBsPsi = eBsMpa * 145.038;
+      const eSbPsi = eSbMpa * 145.038;
+      const mrSgPsi = mrSgMpa * 145.038;
+
+      // Layer coefficients per AASHTO 1993
+      const a1 = Math.min(0.48, Math.max(0.20, 0.171 * Math.log(eAcPsi / 1000) - 0.625));
+      const a2 = Math.min(0.20, Math.max(0.06, 0.249 * Math.log10(eBsPsi) - 0.977));
+      const a3 = Math.min(0.16, Math.max(0.05, 0.227 * Math.log10(eSbPsi) - 0.839));
+
+      // Required Structural Numbers at each interface
+      const SN1 = solveAashto1993SN(W18, Zr, So, dPsi, eBsPsi);
+      const SN2 = solveAashto1993SN(W18, Zr, So, dPsi, eSbPsi);
+      const SN3 = solveAashto1993SN(W18, Zr, So, dPsi, mrSgPsi);
+
+      // Practical rounded layer thicknesses (nearest 0.5 cm)
+      const d1MinIn = SN1 / a1;
+      const d1Cm = Math.max(7.5, Math.ceil((d1MinIn * 2.54) * 2) / 2);
+      const d1In = d1Cm / 2.54;
+      const sn1Star = a1 * d1In;
+
+      const d2MinIn = Math.max(6.0, (SN2 - sn1Star) / (a2 * m2));
+      const d2Cm = Math.max(15.0, Math.ceil((d2MinIn * 2.54) * 2) / 2);
+      const d2In = d2Cm / 2.54;
+      const sn2Star = sn1Star + a2 * d2In * m2;
+
+      const d3MinIn = Math.max(6.0, (SN3 - sn2Star) / (a3 * m3));
+      const d3Cm = Math.max(15.0, Math.ceil((d3MinIn * 2.54) * 2) / 2);
+      const d3In = d3Cm / 2.54;
+      const sn3Star = sn2Star + a3 * d3In * m3;
+
+      const totalCm = d1Cm + d2Cm + d3Cm;
+      const isAdequate = sn3Star >= SN3 && sn2Star >= SN2 && sn1Star >= SN1;
+
+      labState.designReqSN = SN3;
+      labState.designProvSN = sn3Star;
+      labState.designD1Cm = d1Cm;
+      labState.designD2Cm = d2Cm;
+      labState.designD3Cm = d3Cm;
+      labState.designTotalCm = totalCm;
+      labState.designAdequate = isAdequate;
+
+      document.getElementById('desReqSnOut').textContent = SN3.toFixed(2);
+      document.getElementById('desProvSnOut').textContent = sn3Star.toFixed(2);
+
+      const badge = document.getElementById('designStatusBadge');
+      badge.textContent = isAdequate ? 'ADEQUATE' : 'INADEQUATE';
+      badge.className = isAdequate
+        ? 'px-3 py-1 rounded-full bg-emerald-100 text-emerald-800'
+        : 'px-3 py-1 rounded-full bg-rose-100 text-rose-800';
+
+      const tbody = document.getElementById('designLayersBody');
+      if (tbody) {
+        tbody.innerHTML = `
+          <tr>
+            <td class="p-2 text-left text-slate-800">1. Asphalt Concrete (HMA)</td>
+            <td class="p-2 text-center eng-term">a1 = ${a1.toFixed(3)}</td>
+            <td class="p-2 text-center eng-term text-slate-500">${(d1MinIn * 2.54).toFixed(1)} cm</td>
+            <td class="p-2 text-center eng-term text-amber-700 font-black">${d1Cm.toFixed(1)} cm</td>
+            <td class="p-2 text-center eng-term">${d1In.toFixed(2)} in</td>
+          </tr>
+          <tr class="bg-slate-50">
+            <td class="p-2 text-left text-slate-800">2. Granular Base Course</td>
+            <td class="p-2 text-center eng-term">a2 = ${a2.toFixed(3)}</td>
+            <td class="p-2 text-center eng-term text-slate-500">${(d2MinIn * 2.54).toFixed(1)} cm</td>
+            <td class="p-2 text-center eng-term text-amber-700 font-black">${d2Cm.toFixed(1)} cm</td>
+            <td class="p-2 text-center eng-term">${d2In.toFixed(2)} in</td>
+          </tr>
+          <tr>
+            <td class="p-2 text-left text-slate-800">3. Granular Subbase Course</td>
+            <td class="p-2 text-center eng-term">a3 = ${a3.toFixed(3)}</td>
+            <td class="p-2 text-center eng-term text-slate-500">${(d3MinIn * 2.54).toFixed(1)} cm</td>
+            <td class="p-2 text-center eng-term text-amber-700 font-black">${d3Cm.toFixed(1)} cm</td>
+            <td class="p-2 text-center eng-term">${d3In.toFixed(2)} in</td>
+          </tr>
+          <tr class="bg-slate-900 text-white">
+            <td class="p-2 text-left font-black">TOTAL PAVEMENT STRUCTURE</td>
+            <td class="p-2 text-center eng-term text-amber-400">SN* = ${sn3Star.toFixed(2)}</td>
+            <td class="p-2 text-center eng-term text-slate-300">Req = ${SN3.toFixed(2)}</td>
+            <td class="p-2 text-center eng-term text-amber-400 font-black">${totalCm.toFixed(1)} cm</td>
+            <td class="p-2 text-center eng-term">${(totalCm / 2.54).toFixed(2)} in</td>
+          </tr>
+        `;
+      }
+
+      document.getElementById('designMathSteps').textContent =
+        `1. Design Inputs: W18 = ${W18.toLocaleString('en-US')} ESALs | R = ${rel}% (Zr = ${Zr}) | So = ${So} | ΔPSI = ${dPsi}\n` +
+        `2. Solved Structural Numbers: SN1 = ${SN1.toFixed(2)} | SN2 = ${SN2.toFixed(2)} | Total SN3 = ${SN3.toFixed(2)}\n` +
+        `3. Layer Thicknesses: D1 = ${d1Cm.toFixed(1)} cm (${d1In.toFixed(2)}") | D2 = ${d2Cm.toFixed(1)} cm (${d2In.toFixed(2)}") | D3 = ${d3Cm.toFixed(1)} cm (${d3In.toFixed(2)}")\n` +
+        `4. Provided Structural Capacity: SN* = a1·D1 + a2·D2·m2 + a3·D3·m3 = ${sn3Star.toFixed(2)} ≥ ${SN3.toFixed(2)} (${isAdequate ? 'ADEQUATE' : 'INADEQUATE'})`;
+
+      const ctx = document.getElementById('designChart');
+      if (ctx) {
+        if (charts.design) charts.design.destroy();
+        charts.design = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: ['SN1 (Above Base)', 'SN2 (Above Subbase)', 'SN3 (Total Pavement)'],
+            datasets: [
+              {
+                label: 'Required SN (AASHTO 1993)',
+                data: [Number(SN1.toFixed(2)), Number(SN2.toFixed(2)), Number(SN3.toFixed(2))],
+                backgroundColor: '#0f172a',
+                borderRadius: 6
+              },
+              {
+                label: 'Provided SN* (Design Section)',
+                data: [Number(sn1Star.toFixed(2)), Number(sn2Star.toFixed(2)), Number(sn3Star.toFixed(2))],
+                backgroundColor: '#f59e0b',
+                borderRadius: 6
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: { y: { beginAtZero: true, title: { display: true, text: 'Structural Number (SN)' } } }
+          }
+        });
+      }
+
+      updateDashboard();
+    }
+
+    // ==================== EXECUTIVE DASHBOARD SYNCHRONIZATION ====================
+    function updateDashboard() {
+      const spec = LAYER_SPECS[targetLayer];
+      const passNo200 = labState.sievePassMap['No. 200'] || 0;
+
+      // 1. Gradation & Fines Card
+      document.getElementById('kpiFinesVal').textContent = `#200: ${passNo200.toFixed(1)}%`;
+      document.getElementById('kpiCuCcVal').textContent = `Cu = ${labState.cu.toFixed(1)} | Cc = ${labState.cc.toFixed(2)}`;
+      document.getElementById('kpiFinesLimit').textContent = `Max #200: ≤ ${spec.maxFines}%`;
+      const sieveBadge = document.getElementById('kpiSieveBadge');
+      sieveBadge.textContent = labState.sievePassFlag ? 'PASS' : 'FAIL';
+      sieveBadge.className = labState.sievePassFlag
+        ? 'px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800 eng-term'
+        : 'px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-100 text-rose-800 eng-term';
+
+      // 2. L.A. Abrasion Card
+      document.getElementById('kpiLaVal').textContent = `${labState.laPercent.toFixed(1)}%`;
+      document.getElementById('kpiLaLimit').textContent = spec.laRequired ? `Max Limit: ≤ ${spec.maxLA}%` : 'Optional / N/A';
+      const laBadge = document.getElementById('kpiLaBadge');
+      laBadge.textContent = !spec.laRequired ? 'N/A' : (labState.laPassFlag ? 'PASS' : 'FAIL');
+      laBadge.className = !spec.laRequired
+        ? 'px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-slate-200 text-slate-700 eng-term'
+        : (labState.laPassFlag ? 'px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800 eng-term' : 'px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-100 text-rose-800 eng-term');
+
+      // 3. Proctor MDD & OMC Card
+      document.getElementById('kpiMddVal').textContent = `${labState.mdd.toFixed(3)} g/cm³`;
+      document.getElementById('kpiOmcVal').textContent = `OMC = ${labState.omc.toFixed(1)}%`;
+      document.getElementById('kpiCompLimit').textContent = `Field Req: ≥ ${spec.compactionPct}% MDD`;
+
+      // 4. Soaked CBR Card
+      document.getElementById('kpiCbrVal').textContent = `${labState.designCBR.toFixed(1)}%`;
+      document.getElementById('kpiCbrLimit').textContent = `Limit: ≥ ${spec.minCBR}% @ ${spec.compactionPct}% MDD`;
+      const cbrBadge = document.getElementById('kpiCbrBadge');
+      cbrBadge.textContent = labState.cbrPassFlag ? 'PASS' : 'FAIL';
+      cbrBadge.className = labState.cbrPassFlag
+        ? 'px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800 eng-term'
+        : 'px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-100 text-rose-800 eng-term';
+
+      // 5. Atterberg & Classification Card
+      document.getElementById('kpiAashtoVal').textContent = `${labState.aashtoGroup} | ${labState.uscsSymbol}`;
+      document.getElementById('kpiPiLlVal').textContent = labState.isNP
+        ? 'Atterberg: Non-Plastic (NP)'
+        : `LL = ${labState.ll.toFixed(1)}% | PI = ${labState.pi.toFixed(1)}%`;
+      document.getElementById('kpiPiLimit').textContent = `Max: LL≤${spec.maxLL}%, PI≤${spec.maxPI}%`;
+      const piBadge = document.getElementById('kpiPiBadge');
+      piBadge.textContent = labState.attPassFlag ? 'PASS' : 'FAIL';
+      piBadge.className = labState.attPassFlag
+        ? 'px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800 eng-term'
+        : 'px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-100 text-rose-800 eng-term';
+
+      // 6. Resilient Modulus Card
+      document.getElementById('kpiMrVal').textContent = `${labState.triaxialMrMpa.toFixed(0)} MPa`;
+      document.getElementById('kpiMrCoeffVal').textContent = `${labState.triaxialMrPsi.toLocaleString('en-US', { maximumFractionDigits: 0 })} psi | ${labState.layerCoeffLabel}`;
+      document.getElementById('kpiMrLimit').textContent = `Min Limit: ≥ ${spec.minMr} MPa`;
+      const mrBadge = document.getElementById('kpiMrBadge');
+      mrBadge.textContent = labState.mrPassFlag ? 'PASS' : 'FAIL';
+      mrBadge.className = labState.mrPassFlag
+        ? 'px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800 eng-term'
+        : 'px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-100 text-rose-800 eng-term';
+
+      // 7. AASHTO 1993 Pavement Design Card
+      document.getElementById('kpiDesignSnVal').textContent = `SN* = ${labState.designProvSN.toFixed(2)}`;
+      document.getElementById('kpiDesignThickVal').textContent = `Total = ${labState.designTotalCm.toFixed(1)} cm (${labState.designD1Cm.toFixed(1)}/${labState.designD2Cm.toFixed(0)}/${labState.designD3Cm.toFixed(0)})`;
+      document.getElementById('kpiDesignReqVal').textContent = `Req SN = ${labState.designReqSN.toFixed(2)} (AASHTO 1993)`;
+      const desBadge = document.getElementById('kpiDesignBadge');
+      desBadge.textContent = labState.designAdequate ? 'SN* ≥ SN' : 'SN* < SN';
+      desBadge.className = labState.designAdequate
+        ? 'px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500/20 text-amber-300 border border-amber-500/40 eng-term'
+        : 'px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-500/30 text-rose-200 border border-rose-400/50 eng-term';
+
+      // 8. Overall Engineering Verdict Card
+      const checks = [
+        labState.sievePassFlag,
+        labState.laPassFlag,
+        labState.cbrPassFlag,
+        labState.attPassFlag,
+        labState.mrPassFlag,
+        labState.designAdequate
+      ];
+      const passedCount = checks.filter(Boolean).length;
+      const overallPass = passedCount === checks.length;
+
+      const verdictCard = document.getElementById('kpiVerdictCard');
+      verdictCard.className = overallPass
+        ? 'bg-emerald-600 text-white rounded-2xl p-4 shadow-sm flex flex-col justify-between print-card'
+        : 'bg-rose-600 text-white rounded-2xl p-4 shadow-sm flex flex-col justify-between print-card';
+
+      document.getElementById('kpiVerdictText').textContent = overallPass ? 'ACCEPTED (PASS)' : 'REVIEW REQUIRED';
+      document.getElementById('kpiVerdictSub').textContent = overallPass ? 'All Layer & Design Criteria Met' : 'One or more checks failed';
+      document.getElementById('kpiPassRatio').textContent = `${passedCount} / ${checks.length} Passed`;
+      document.getElementById('kpiLayerStandard').textContent = spec.nameEn;
+
+      // Master 8-Module Summary Table
+      const rows = [
+        {
+          name: '1. Gradation / Sieve Analysis',
+          std: 'ASTM C136 / T27',
+          res: `Pass #200: ${passNo200.toFixed(1)}% | Cu=${labState.cu.toFixed(1)}`,
+          lim: `Pass #200 ≤ ${spec.maxFines}%`,
+          status: labState.sievePassFlag ? 'PASS' : 'FAIL',
+          ok: labState.sievePassFlag
+        },
+        {
+          name: '2. L.A. Abrasion Loss',
+          std: 'ASTM C131 / T96',
+          res: `${labState.laPercent.toFixed(1)}%`,
+          lim: spec.laRequired ? `≤ ${spec.maxLA}%` : 'Optional (N/A)',
+          status: !spec.laRequired ? 'N/A' : (labState.laPassFlag ? 'PASS' : 'FAIL'),
+          ok: labState.laPassFlag
+        },
+        {
+          name: '3. Modified Proctor Compaction',
+          std: 'ASTM D1557 / T180',
+          res: `MDD=${labState.mdd.toFixed(3)} g/cm³ | OMC=${labState.omc.toFixed(1)}%`,
+          lim: `Field ≥ ${spec.compactionPct}% MDD`,
+          status: 'VERIFIED',
+          ok: true
+        },
+        {
+          name: '4. Soaked CBR Bearing Ratio',
+          std: 'ASTM D1883 / T193',
+          res: `${labState.designCBR.toFixed(1)}%`,
+          lim: `≥ ${spec.minCBR}% (@ ${spec.compactionPct}% MDD)`,
+          status: labState.cbrPassFlag ? 'PASS' : 'FAIL',
+          ok: labState.cbrPassFlag
+        },
+        {
+          name: '5. Atterberg Limits (LL & PI)',
+          std: 'ASTM D4318 / T89-T90',
+          res: labState.isNP ? 'Non-Plastic (NP)' : `LL=${labState.ll.toFixed(1)}% | PI=${labState.pi.toFixed(1)}%`,
+          lim: `LL ≤ ${spec.maxLL}%, PI ≤ ${spec.maxPI}%`,
+          status: labState.attPassFlag ? 'PASS' : 'FAIL',
+          ok: labState.attPassFlag
+        },
+        {
+          name: '6. Soil & Aggregate Classification',
+          std: 'AASHTO M 145 / USCS',
+          res: `${labState.aashtoGroup} | ${labState.uscsSymbol}`,
+          lim: targetLayer === 'base' ? 'A-1-a' : 'A-1 / A-2',
+          status: 'CLASSIFIED',
+          ok: true
+        },
+        {
+          name: '7. Resilient Modulus (Mr)',
+          std: 'AASHTO T 307 / 1993',
+          res: `${labState.triaxialMrMpa.toFixed(0)} MPa (${labState.layerCoeffLabel})`,
+          lim: `≥ ${spec.minMr} MPa`,
+          status: labState.mrPassFlag ? 'PASS' : 'FAIL',
+          ok: labState.mrPassFlag
+        },
+        {
+          name: '8. Pavement Thickness Design',
+          std: 'AASHTO 1993 Guide',
+          res: `SN*=${labState.designProvSN.toFixed(2)} | Total=${labState.designTotalCm.toFixed(1)} cm`,
+          lim: `Req SN ≥ ${labState.designReqSN.toFixed(2)}`,
+          status: labState.designAdequate ? 'ADEQUATE' : 'INADEQUATE',
+          ok: labState.designAdequate
+        }
+      ];
+
+      document.getElementById('dashboardSummaryBody').innerHTML = rows.map(r => `
+        <tr class="hover:bg-slate-50">
+          <td class="p-2.5 text-left font-bold text-slate-800">${r.name}</td>
+          <td class="p-2.5 text-center eng-term text-slate-500">${r.std}</td>
+          <td class="p-2.5 text-center eng-term font-bold text-slate-900">${r.res}</td>
+          <td class="p-2.5 text-center eng-term text-slate-600">${r.lim}</td>
+          <td class="p-2.5 text-center">
+            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold eng-term ${r.status === 'N/A' ? 'bg-slate-200 text-slate-700' : (r.ok ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800')}">
+              ${r.status}
+            </span>
+          </td>
+        </tr>
+      `).join('');
+
+      const ctx = document.getElementById('dashboardChart');
+      if (ctx) {
+        if (charts.dashboard) charts.dashboard.destroy();
+        charts.dashboard = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: ['CBR (%)', 'L.A. Loss (%)', 'Liquid Limit (%)', 'Plasticity Index (%)', 'Pass #200 (%)', 'Mr (×10 MPa)'],
+            datasets: [
+              {
+                label: 'Measured Value',
+                data: [
+                  Number(labState.designCBR.toFixed(1)),
+                  Number(labState.laPercent.toFixed(1)),
+                  Number(labState.ll.toFixed(1)),
+                  Number(labState.pi.toFixed(1)),
+                  Number(passNo200.toFixed(1)),
+                  Number((labState.triaxialMrMpa / 10).toFixed(1))
+                ],
+                backgroundColor: '#f59e0b',
+                borderRadius: 6
+              },
+              {
+                label: 'Spec Limit',
+                data: [
+                  spec.minCBR,
+                  spec.maxLA,
+                  spec.maxLL,
+                  spec.maxPI,
+                  spec.maxFines,
+                  Number((spec.minMr / 10).toFixed(1))
+                ],
+                backgroundColor: '#0f172a',
+                borderRadius: 6
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: { y: { beginAtZero: true } }
+          }
+        });
+      }
+    }
+
+    // ==================== PDF & EXCEL EXPORTS ====================
+    async function exportDashboardPDF() {
+      showToast('Generating Executive Dashboard PDF...');
+      try {
+        switchTab('dashboard');
+        await new Promise(r => setTimeout(r, 200));
+        const area = document.getElementById('dashboardExportArea');
+        const canvas = await html2canvas(area, { scale: 2, useCORS: true });
+        const imgData = canvas.toDataURL('image/png');
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('l', 'mm', 'a4');
+        const pageW = pdf.internal.pageSize.getWidth();
+        const pageH = (canvas.height * pageW) / canvas.width;
+        pdf.addImage(imgData, 'PNG', 6, 6, pageW - 12, Math.min(pageH, pdf.internal.pageSize.getHeight() - 12));
+        const sampleId = document.getElementById('metaSampleId').value || 'Sample';
+        pdf.save(`Smart_Road_Lab_Dashboard_${sampleId}.pdf`);
+        showToast('Dashboard PDF downloaded successfully!');
+      } catch (err) {
+        console.error(err);
+        showToast('Opening print dialog for PDF export...');
+        window.print();
+      }
+    }
+
+    function exportFullReportPDF() {
+      showToast('Generating Official Laboratory Report PDF...');
+      try {
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const spec = LAYER_SPECS[targetLayer];
+        const sampleId = document.getElementById('metaSampleId').value;
+
+        pdf.setFillColor(15, 23, 42);
+        pdf.rect(0, 0, 210, 32, 'F');
+        pdf.setTextColor(251, 191, 36);
+        pdf.setFontSize(16);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('SMART ROAD LAB — OFFICIAL LABORATORY TEST REPORT', 14, 14);
+        pdf.setTextColor(255, 255, 255);
+        pdf.setFontSize(9);
+        pdf.setFont('helvetica', 'normal');
+        pdf.text('Eng./ Samar A.Taha | B.Sc. Civil Eng. (2010), M.Sc. Civil Eng. (2019), Mansoura University', 14, 22);
+        pdf.text(`Target Layer: ${spec.nameEn}`, 14, 28);
+
+        pdf.setTextColor(15, 23, 42);
+        pdf.setFontSize(10);
+        let y = 42;
+        const metaLines = [
+          `Project: ${document.getElementById('metaProject').value}`,
+          `Client: ${document.getElementById('metaClient').value}`,
+          `Sample ID: ${sampleId}   |   Date: ${document.getElementById('metaDate').value}`,
+          `Station & Depth: ${document.getElementById('metaStation').value}`,
+          `Source / Quarry: ${document.getElementById('metaSource').value}`
+        ];
+        metaLines.forEach(line => { pdf.text(line, 14, y); y += 6; });
+
+        y += 4;
+        pdf.setFillColor(241, 245, 249);
+        pdf.rect(14, y, 182, 8, 'F');
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('Test / Design Module', 16, y + 5.5);
+        pdf.text('Measured Result', 92, y + 5.5);
+        pdf.text('Specification Limit', 142, y + 5.5);
+        pdf.text('Status', 178, y + 5.5);
+        y += 13;
+
+        pdf.setFont('helvetica', 'normal');
+        const pass200 = (labState.sievePassMap['No. 200'] || 0).toFixed(1);
+        const summaryRows = [
+          ['1. Sieve Analysis (T27)', `Pass #200=${pass200}%, Cu=${labState.cu.toFixed(1)}`, `<= ${spec.maxFines}%`, labState.sievePassFlag ? 'PASS' : 'FAIL'],
+          ['2. L.A. Abrasion (T96)', `${labState.laPercent.toFixed(1)}%`, spec.laRequired ? `<= ${spec.maxLA}%` : 'N/A', !spec.laRequired ? 'N/A' : (labState.laPassFlag ? 'PASS' : 'FAIL')],
+          ['3. Modified Proctor (T180)', `MDD=${labState.mdd.toFixed(3)} g/cm3, OMC=${labState.omc.toFixed(1)}%`, `>= ${spec.compactionPct}% MDD`, 'VERIFIED'],
+          ['4. Soaked CBR (T193)', `${labState.designCBR.toFixed(1)}%`, `>= ${spec.minCBR}%`, labState.cbrPassFlag ? 'PASS' : 'FAIL'],
+          ['5. Atterberg Limits (T89/90)', labState.isNP ? 'Non-Plastic (NP)' : `LL=${labState.ll.toFixed(1)}%, PI=${labState.pi.toFixed(1)}%`, `LL<=${spec.maxLL}, PI<=${spec.maxPI}`, labState.attPassFlag ? 'PASS' : 'FAIL'],
+          ['6. Soil Classification', `${labState.aashtoGroup} | ${labState.uscsSymbol}`, 'AASHTO M 145 / USCS', 'DONE'],
+          ['7. Resilient Modulus (T 307)', `${labState.triaxialMrMpa.toFixed(0)} MPa (${labState.layerCoeffLabel})`, `>= ${spec.minMr} MPa`, labState.mrPassFlag ? 'PASS' : 'FAIL'],
+          ['8. AASHTO 1993 Design', `SN*=${labState.designProvSN.toFixed(2)}, Total=${labState.designTotalCm.toFixed(1)} cm`, `Req SN >= ${labState.designReqSN.toFixed(2)}`, labState.designAdequate ? 'ADEQUATE' : 'CHECK']
+        ];
+
+        summaryRows.forEach(r => {
+          pdf.text(r[0], 16, y);
+          pdf.text(r[1], 92, y);
+          pdf.text(r[2], 142, y);
+          pdf.setFont('helvetica', 'bold');
+          pdf.text(r[3], 178, y);
+          pdf.setFont('helvetica', 'normal');
+          y += 8;
+        });
+
+        pdf.save(`Smart_Road_Lab_Full_Report_${sampleId}.pdf`);
+        showToast('Full Laboratory PDF Report downloaded!');
+      } catch (err) {
+        console.error(err);
+        window.print();
+      }
+    }
+
+    function exportExcelWorkbook() {
+      try {
+        const wb = XLSX.utils.book_new();
+        const spec = LAYER_SPECS[targetLayer];
+        const sampleId = document.getElementById('metaSampleId').value || 'Sample';
+
+        // Sheet 1: Executive Summary
+        const summaryData = [
+          ['SMART ROAD LAB — PAVEMENT & SOIL MATERIALS ENGINEERING REPORT'],
+          ['Developed by: Eng./ Samar A.Taha | B.Sc. Civil Eng. (2010), M.Sc. Civil Eng. (2019), Mansoura University'],
+          [],
+          ['Project Name', document.getElementById('metaProject').value, 'Sample ID', sampleId],
+          ['Client', document.getElementById('metaClient').value, 'Testing Date', document.getElementById('metaDate').value],
+          ['Station & Depth', document.getElementById('metaStation').value, 'Target Layer', spec.nameEn],
+          [],
+          ['Module', 'Standard', 'Measured Result', 'Specification Limit', 'Status'],
+          ['1. Gradation / Sieve Analysis', 'ASTM C136 / T27', `Pass #200: ${(labState.sievePassMap['No. 200'] || 0).toFixed(1)}% | Cu=${labState.cu.toFixed(2)}`, `<= ${spec.maxFines}%`, labState.sievePassFlag ? 'PASS' : 'FAIL'],
+          ['2. L.A. Abrasion Loss', 'ASTM C131 / T96', `${labState.laPercent.toFixed(1)}%`, spec.laRequired ? `<= ${spec.maxLA}%` : 'N/A', !spec.laRequired ? 'N/A' : (labState.laPassFlag ? 'PASS' : 'FAIL')],
+          ['3. Modified Proctor', 'ASTM D1557 / T180', `MDD=${labState.mdd.toFixed(3)} g/cm3 | OMC=${labState.omc.toFixed(1)}%`, `>= ${spec.compactionPct}% MDD`, 'VERIFIED'],
+          ['4. Soaked CBR', 'ASTM D1883 / T193', `${labState.designCBR.toFixed(1)}%`, `>= ${spec.minCBR}%`, labState.cbrPassFlag ? 'PASS' : 'FAIL'],
+          ['5. Atterberg Limits', 'ASTM D4318 / T89-T90', labState.isNP ? 'NP' : `LL=${labState.ll.toFixed(1)}% | PI=${labState.pi.toFixed(1)}%`, `LL<=${spec.maxLL}, PI<=${spec.maxPI}`, labState.attPassFlag ? 'PASS' : 'FAIL'],
+          ['6. Classification', 'AASHTO M 145 / USCS', `${labState.aashtoGroup} | ${labState.uscsSymbol}`, 'Standard', 'CLASSIFIED'],
+          ['7. Resilient Modulus', 'AASHTO T 307 / 1993', `${labState.triaxialMrMpa.toFixed(0)} MPa (${labState.layerCoeffLabel})`, `>= ${spec.minMr} MPa`, labState.mrPassFlag ? 'PASS' : 'FAIL'],
+          ['8. Pavement Design', 'AASHTO 1993 Guide', `SN*=${labState.designProvSN.toFixed(2)} | Total=${labState.designTotalCm.toFixed(1)} cm`, `Req SN >= ${labState.designReqSN.toFixed(2)}`, labState.designAdequate ? 'ADEQUATE' : 'INADEQUATE']
+        ];
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(summaryData), 'Executive_Summary');
+
+        // Sheet 2: Sieve Analysis
+        const sieveSheet = [['Sieve', 'Size (mm)', 'Retained (g)', '% Passing']];
+        SIEVE_DATA.forEach(s => {
+          sieveSheet.push([s.name, s.size, s.ret, Number((labState.sievePassMap[s.name] || 0).toFixed(2))]);
+        });
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(sieveSheet), 'Sieve_Analysis');
+
+        // Sheet 3: Proctor & CBR
+        const proctorSheet = [['Trial', 'Moisture (%)', 'Wet Mass (g)']];
+        PROCTOR_TRIALS.forEach((t, i) => proctorSheet.push([i + 1, t.w, t.wetMass]));
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(proctorSheet), 'Modified_Proctor');
+
+        // Sheet 4: Resilient Modulus & Pavement Design
+        const designSheet = [
+          ['AASHTO T 307 & 1993 PAVEMENT DESIGN'],
+          ['Triaxial Mr (MPa)', labState.triaxialMrMpa.toFixed(1)],
+          ['Layer Coefficient', labState.layerCoeffLabel],
+          ['Required Structural Number SN', labState.designReqSN.toFixed(2)],
+          ['Provided Structural Number SN*', labState.designProvSN.toFixed(2)],
+          ['Asphalt Thickness D1 (cm)', labState.designD1Cm.toFixed(1)],
+          ['Base Thickness D2 (cm)', labState.designD2Cm.toFixed(1)],
+          ['Subbase Thickness D3 (cm)', labState.designD3Cm.toFixed(1)],
+          ['Total Pavement Thickness (cm)', labState.designTotalCm.toFixed(1)]
+        ];
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(designSheet), 'Mr_and_Pavement_Design');
+
+        XLSX.writeFile(wb, `Smart_Road_Lab_${sampleId}.xlsx`);
+        showToast('Excel Workbook (.xlsx) exported successfully!');
+      } catch (err) {
+        console.error(err);
+        showToast('Error generating Excel file.');
+      }
+    }
+
+    function recalculateAll() {
+      calculateSieve();
+      calculateLA();
+      calculateProctor();
+      calculateCBR();
+      calculateAtterberg();
+      classifySoil();
+      calculateResilientModulus();
+      calculatePavementDesign();
+      updateDashboard();
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      buildSieveTable();
+      buildProctorTable();
+      buildCbrTable();
+      buildMrTable();
+      recalculateAll();
+    });
+  </script>
+</body>
+</html>
